@@ -75,15 +75,19 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
               ? 'Décris la tâche, l’IA la découpe en micro-étapes.'
               : 'Décris simplement, on découpe automatiquement.'}
           </Text>
+          <Text style={styles.tip}>
+            🎤 Tu peux dicter avec le micro de ton clavier.
+          </Text>
 
           <TextInput
             placeholder="Ex: Préparer le dossier d'inscription"
             placeholderTextColor={c.textFaint}
-            style={styles.input}
+            style={[styles.input, styles.titleInput]}
             value={title}
             onChangeText={setTitle}
             autoFocus
             editable={!loading}
+            multiline
           />
 
           <TextInput
@@ -148,6 +152,7 @@ const makeStyles = (c: ColorScheme) =>
     },
     heading: { ...type.h1, color: c.text },
     hint: { ...type.small, color: c.textMuted },
+    tip: { ...type.tiny, color: c.textFaint },
     input: {
       backgroundColor: c.surface,
       borderRadius: radius.md,
@@ -158,6 +163,7 @@ const makeStyles = (c: ColorScheme) =>
       color: c.text,
     },
     multiline: { minHeight: 80, textAlignVertical: 'top' },
+    titleInput: { minHeight: 60, textAlignVertical: 'top' },
     label: { ...type.small, color: c.textMuted },
     priorityRow: { flexDirection: 'row', gap: spacing.sm },
     pill: {

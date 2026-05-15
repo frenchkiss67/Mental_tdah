@@ -17,6 +17,7 @@ Le TDAH n'est pas un déficit de motivation, c'est un déficit d'initiation. Tou
 - Ajouter une tâche = un champ texte et un bouton. La priorité a un défaut sain. La décomposition se fait toute seule.
 - Sur la liste, un bouton **Juste 2 min** qui démarre un mini-focus sans rien demander. Pas de tâche sélectionnée ? Pas grave, on lance quand même.
 - Un bouton **Choisis pour moi** qui tire au sort une tâche en cours, pondérée par priorité, pour by-passer la paralysie décisionnelle.
+- Une **inbox "Vider la tête"** en haut de l'onglet Tâches : un seul champ texte, capture immédiate sans catégorisation. La pensée est attrapée d'abord, traitée plus tard (convertie en tâche ou archivée). Le but est de ne *jamais* perdre une idée à cause de la friction "où je la range ?".
 
 ### 2. Compassion intégrée, pas la honte par défaut
 
@@ -141,6 +142,18 @@ On a testé mentalement : c'est anxiogène. La notification arrive à la fin, po
 ### Pourquoi la décomposition heuristique n'est pas vide même sans note
 
 Si la tâche n'a aucune note ni séparateur, on génère 5 étapes templates ("Ouvrir ce qu'il faut pour : X", "Lister les 3 premières micro-étapes"...). C'est volontairement banal — l'objectif n'est pas de remplacer la réflexion, c'est de **commencer à cocher quelque chose**. Cocher la première étape déclenche le geste, même si l'étape est triviale.
+
+### Pourquoi un "Done log" sans graphes
+
+Le TDAH a une mémoire émotionnelle distordue qui efface les accomplissements ("j'ai rien foutu aujourd'hui" prononcé après une journée de 6 tâches). On répare ça avec une **liste plate** des tâches faites, groupée par jour, sur l'onglet "Faites". Pas de graphe d'évolution, pas de pourcentage, pas de comparaison avec hier. Juste : "voilà ce que tu as fait cette semaine, compte-les". Un graphe descendant serait dévastateur. Une liste qui s'allonge est validante par sa simple existence.
+
+### Pourquoi marquer les tâches "stale" mais ne rien forcer
+
+Une tâche non-faite depuis 7+ jours obtient une bordure pointillée et un petit "{n}j". On la rend visible, on ne la juge pas. L'utilisateur peut choisir de la relancer, l'éditer (sous-tâches modifiables maintenant), ou la supprimer sans culpabilité. Beaucoup d'apps suppriment ou archivent automatiquement les vieilles tâches — c'est en fait dévastateur pour quelqu'un qui repousse les choses justement parce qu'elles l'angoissent. Notre version : la tâche reste là, douce, voyante, mais on ne fait rien sans accord.
+
+### Pourquoi pas de "vraie" capture vocale
+
+Une vraie transcription vocale (Whisper, Google Speech) nécessite soit un build EAS, soit une clé API externe avec coût. À ce stade, on s'appuie sur la **dictée native du clavier OS** (déjà présente, gratuite, locale) avec un simple hint dans le formulaire d'ajout. La majorité des utilisateurs ignore cette feature → la mentionner suffit à débloquer 80% du bénéfice. Le reste viendra avec EAS Build.
 
 ## Ce qu'on refuse de faire
 

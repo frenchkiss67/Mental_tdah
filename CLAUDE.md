@@ -44,8 +44,9 @@ src/
   components/
     AddTaskSheet.tsx             Modal création tâche (avec option décomposition IA)
     AddRoutineSheet.tsx          Modal création routine (jours + heure)
+    NotesInbox.tsx               Carte "Vider la tête" (capture sans catégorisation)
     PomodoroTimer.tsx            Anneau SVG + contrôles, pure view qui lit le store
-    TaskItem.tsx                 Carte tâche dépliable
+    TaskItem.tsx                 Carte tâche dépliable, sous-tâches éditables, badge "stale" 7j+
     RoutineItem.tsx              Ligne routine
     StuckCard.tsx                Boutons "Juste 2 min" + "Choisis pour moi" (anti-friction TDAH)
     XPBar.tsx                    Barre XP + niveau
@@ -81,7 +82,9 @@ const makeStyles = (c: ColorScheme) => StyleSheet.create({
 
 ### State
 
-Tout le state persistant et partagé est dans `src/store.ts`. Une seule store Zustand. Slices logiques : `tasks`, `routines`, `gamification`, `settings`, `pomodoro`, `currentTaskId`. Le flag `hydrated` est non-persisté, juste pour l'écran splash.
+Tout le state persistant et partagé est dans `src/store.ts`. Une seule store Zustand. Slices logiques : `tasks`, `routines`, `notes`, `gamification`, `settings`, `pomodoro`, `currentTaskId`. Le flag `hydrated` est non-persisté, juste pour l'écran splash.
+
+Les **notes** sont l'inbox brain-dump : entrées texte libres sans catégorisation. Trois cycles de vie : actives → archivées (`archivedAt` non-null) → supprimées. `convertNoteToTask` crée une tâche réelle et archive la note d'origine pour garder la trace. Les notes archivées restent persistées (debug / undo manuel) mais sont filtrées de l'UI principale.
 
 Pour ajouter un nouvel état :
 1. Ajouter le type dans `types.ts`
@@ -139,6 +142,14 @@ Pas de prompt caching activé (le system prompt est trop court pour la cache min
 - Pas de PR ouverte ; on commit puis push.
 - Pas de hook pre-commit configuré ; lancer `npx tsc --noEmit` à la main avant chaque commit.
 
+### Done log
+
+L'onglet "Faites" du `TasksScreen` rend une `SectionList` groupée par jour (helpers `dayKey` / `dayLabel` locaux dans le screen, format `Aujourd'hui` / `Hier` / nom du jour si <7j / date longue sinon). Une carte de résumé en haut affiche le compte hebdomadaire (`completedAt >= now - 7j`) plus les minutes focus cumulées. Ne PAS y mettre de graphe / évolution — c'est volontaire (voir `design.md`).
+
+### Tâches "stale"
+
+Une tâche non-faite avec `createdAt` > 7 jours hérite d'un visuel discret (bordure pointillée `warning`, tag `{n}j`). Calcul en ligne dans `TaskItem`. Pas d'action automatique : juste un signal doux pour la rendre visible.
+
 ## Ce qui n'existe pas (encore)
 
 - Sync cloud / comptes / multi-device
@@ -148,6 +159,7 @@ Pas de prompt caching activé (le system prompt est trop court pour la cache min
 - CI
 - Soundscapes (brown noise, lofi) — sur la roadmap courte
 - Estimation de temps par micro-étape — sur la roadmap courte
+- Capture vocale "vraie" (Whisper) — bloquée par Expo Go, fallback actuel = hint dictée native du clavier
 - Suivi médication explicite (passe par les routines pour l'instant)
 
 ## Prendre le contexte produit

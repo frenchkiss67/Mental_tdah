@@ -55,6 +55,13 @@ export type Routine = {
   notificationId?: string;
 };
 
+export type Note = {
+  id: string;
+  text: string;
+  createdAt: number;
+  archivedAt?: number;
+};
+
 export type ThemePref = 'system' | 'light' | 'dark';
 
 export type Settings = {

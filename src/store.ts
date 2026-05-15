@@ -10,6 +10,7 @@ import {
   JOKER_CAP,
   JOKER_INITIAL,
   type GamificationState,
+  type Note,
   type PomodoroPhase,
   type PomodoroState,
   type Routine,
@@ -22,6 +23,7 @@ import { daysBetween, decomposeTask, todayKey, uid } from './utils';
 type Store = {
   tasks: Task[];
   routines: Routine[];
+  notes: Note[];
   gamification: GamificationState;
   settings: Settings;
   pomodoro: PomodoroState;
@@ -38,7 +40,15 @@ type Store = {
   toggleTask: (id: string) => void;
   removeTask: (id: string) => void;
   toggleSubtask: (taskId: string, subId: string) => void;
+  addSubtask: (taskId: string, title: string) => void;
+  removeSubtask: (taskId: string, subId: string) => void;
   setCurrentTask: (id: string | null) => void;
+
+  addNote: (text: string) => string;
+  archiveNote: (id: string) => void;
+  unarchiveNote: (id: string) => void;
+  removeNote: (id: string) => void;
+  convertNoteToTask: (id: string) => string | null;
 
   addRoutine: (input: Omit<Routine, 'id' | 'streak' | 'lastCompletedDay' | 'createdAt'>) => string;
   toggleRoutineToday: (id: string) => void;
@@ -145,6 +155,7 @@ export const useStore = create<Store>()(
     (set, get) => ({
       tasks: [],
       routines: [],
+      notes: [],
       gamification: initialGamification,
       settings: initialSettings,
       pomodoro: initialPomodoro,
@@ -221,7 +232,69 @@ export const useStore = create<Store>()(
           ),
         })),
 
+      addSubtask: (taskId, title) => {
+        const trimmed = title.trim();
+        if (!trimmed) return;
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id !== taskId
+              ? t
+              : {
+                  ...t,
+                  subtasks: [...t.subtasks, { id: uid(), title: trimmed, done: false }],
+                },
+          ),
+        }));
+      },
+
+      removeSubtask: (taskId, subId) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id !== taskId
+              ? t
+              : { ...t, subtasks: t.subtasks.filter((sub) => sub.id !== subId) },
+          ),
+        })),
+
       setCurrentTask: (id) => set({ currentTaskId: id }),
+
+      addNote: (text) => {
+        const trimmed = text.trim();
+        if (!trimmed) return '';
+        const id = uid();
+        const note: Note = { id, text: trimmed, createdAt: Date.now() };
+        set((s) => ({ notes: [note, ...s.notes] }));
+        return id;
+      },
+
+      archiveNote: (id) =>
+        set((s) => ({
+          notes: s.notes.map((n) =>
+            n.id === id ? { ...n, archivedAt: Date.now() } : n,
+          ),
+        })),
+
+      unarchiveNote: (id) =>
+        set((s) => ({
+          notes: s.notes.map((n) =>
+            n.id === id ? { ...n, archivedAt: undefined } : n,
+          ),
+        })),
+
+      removeNote: (id) =>
+        set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+
+      convertNoteToTask: (id) => {
+        const note = get().notes.find((n) => n.id === id);
+        if (!note) return null;
+        const taskId = get().addTask(note.text);
+        set((s) => ({
+          notes: s.notes.map((n) =>
+            n.id === id ? { ...n, archivedAt: Date.now() } : n,
+          ),
+        }));
+        return taskId;
+      },
 
       addRoutine: (input) => {
         const id = uid();
@@ -415,6 +488,7 @@ export const useStore = create<Store>()(
         set({
           tasks: [],
           routines: [],
+          notes: [],
           gamification: initialGamification,
           settings: initialSettings,
           pomodoro: initialPomodoro,
@@ -429,6 +503,7 @@ export const useStore = create<Store>()(
       partialize: (s) => ({
         tasks: s.tasks,
         routines: s.routines,
+        notes: s.notes,
         gamification: s.gamification,
         settings: s.settings,
         // Don't persist pomodoro live state — start fresh each app launch.
