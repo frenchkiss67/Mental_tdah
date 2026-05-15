@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "FocusADHD",
+    "slug": "focusadhd",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "focusadhd",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#F4F1FB"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.focusadhd.app"
+    },
+    "android": {
+      "package": "com.focusadhd.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F4F1FB"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
