@@ -30,6 +30,7 @@ const TasksTab: React.FC<{ navigation: any }> = ({ navigation }) => {
         setCurrentTask(taskId);
         navigation.navigate('Focus');
       }}
+      onGoFocus={() => navigation.navigate('Focus')}
     />
   );
 };

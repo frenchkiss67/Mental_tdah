@@ -75,3 +75,23 @@ export const levelFromXp = (xp: number): { level: number; into: number; need: nu
   }
   return { level: lvl, into: remaining, need: xpForLevel(lvl) };
 };
+
+import type { Priority, Task } from './types';
+
+const priorityWeight = (p: Priority): number =>
+  p === 'high' ? 3 : p === 'low' ? 1 : 2;
+
+// Picks a pending task with a priority-weighted random draw.
+// Returns null when there is nothing to do.
+export const pickWeightedRandomTask = (tasks: Task[]): Task | null => {
+  const pending = tasks.filter((t) => !t.done);
+  if (pending.length === 0) return null;
+  const weights = pending.map((t) => priorityWeight(t.priority));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < pending.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return pending[i];
+  }
+  return pending[pending.length - 1];
+};

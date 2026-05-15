@@ -14,6 +14,7 @@ import { XPBar } from '../components/XPBar';
 import { ensurePermissions } from '../services/notifications';
 import { useStore } from '../store';
 import { colors, radius, spacing, type } from '../theme';
+import { JOKER_CAP } from '../types';
 
 const StatCard: React.FC<{ label: string; value: string | number; hint?: string }> = ({
   label,
@@ -110,6 +111,27 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={styles.card}>
           <XPBar xp={gamification.xp} />
+          <View style={styles.jokerRow}>
+            <View style={styles.jokerLabelWrap}>
+              <Text style={styles.jokerLabel}>Jokers</Text>
+              <Text style={styles.jokerHint}>
+                {gamification.jokerUsedToday
+                  ? 'Joker utilisé : ta série continue.'
+                  : `Pardonne un jour manqué. +1 tous les 7 jours.`}
+              </Text>
+            </View>
+            <View style={styles.jokerPips}>
+              {Array.from({ length: JOKER_CAP }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.jokerPip,
+                    i < gamification.jokers && styles.jokerPipActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
         </View>
 
         <View style={styles.statsRow}>
@@ -314,6 +336,26 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: spacing.md,
   },
+  jokerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  jokerLabelWrap: { flex: 1, gap: 2 },
+  jokerLabel: { ...type.small, color: colors.text, fontWeight: '700' },
+  jokerHint: { ...type.tiny, color: colors.textMuted },
+  jokerPips: { flexDirection: 'row', gap: spacing.xs },
+  jokerPip: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  jokerPipActive: { backgroundColor: colors.warning, borderColor: colors.warning },
   statsRow: { flexDirection: 'row', gap: spacing.sm },
   stat: {
     flex: 1,

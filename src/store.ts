@@ -6,14 +6,16 @@ import {
   scheduleDailyReminder,
   scheduleFocusEnd,
 } from './services/notifications';
-import type {
-  GamificationState,
-  PomodoroPhase,
-  PomodoroState,
-  Routine,
-  Settings,
-  Subtask,
-  Task,
+import {
+  JOKER_CAP,
+  JOKER_INITIAL,
+  type GamificationState,
+  type PomodoroPhase,
+  type PomodoroState,
+  type Routine,
+  type Settings,
+  type Subtask,
+  type Task,
 } from './types';
 import { daysBetween, decomposeTask, todayKey, uid } from './utils';
 
@@ -46,7 +48,8 @@ type Store = {
   updateSettings: (patch: Partial<Settings>) => void;
   applyDailyReminder: (enabled: boolean, hour: number, minute: number) => Promise<void>;
 
-  startPomodoroPhase: (phase: PomodoroPhase) => Promise<void>;
+  startPomodoroPhase: (phase: PomodoroPhase, overrideSeconds?: number) => Promise<void>;
+  startQuickFocus: (taskId?: string) => Promise<void>;
   togglePomodoro: () => Promise<void>;
   resetPomodoro: () => Promise<void>;
   advancePomodoroPhase: () => Promise<void>;
@@ -62,6 +65,8 @@ const initialGamification: GamificationState = {
   lastActiveDay: null,
   totalTasksDone: 0,
   totalFocusMinutes: 0,
+  jokers: JOKER_INITIAL,
+  jokerUsedToday: false,
 };
 
 const initialSettings: Settings = {
@@ -98,11 +103,40 @@ const bumpStreak = (state: GamificationState): GamificationState => {
   const today = todayKey();
   if (state.lastActiveDay === today) return state;
   if (state.lastActiveDay == null) {
-    return { ...state, streak: 1, lastActiveDay: today };
+    return { ...state, streak: 1, lastActiveDay: today, jokerUsedToday: false };
   }
   const diff = daysBetween(state.lastActiveDay, today);
-  const nextStreak = diff === 1 ? state.streak + 1 : 1;
-  return { ...state, streak: nextStreak, lastActiveDay: today };
+
+  if (diff === 1) {
+    const nextStreak = state.streak + 1;
+    // Joker earned every 7 days, capped.
+    const earned = nextStreak % 7 === 0 && state.jokers < JOKER_CAP;
+    return {
+      ...state,
+      streak: nextStreak,
+      lastActiveDay: today,
+      jokers: earned ? state.jokers + 1 : state.jokers,
+      jokerUsedToday: false,
+    };
+  }
+
+  const missed = diff - 1;
+  if (missed <= state.jokers) {
+    return {
+      ...state,
+      streak: state.streak + 1,
+      lastActiveDay: today,
+      jokers: state.jokers - missed,
+      jokerUsedToday: true,
+    };
+  }
+
+  return {
+    ...state,
+    streak: 1,
+    lastActiveDay: today,
+    jokerUsedToday: false,
+  };
 };
 
 export const useStore = create<Store>()(
@@ -275,10 +309,10 @@ export const useStore = create<Store>()(
         }));
       },
 
-      startPomodoroPhase: async (phase) => {
+      startPomodoroPhase: async (phase, overrideSeconds) => {
         if (phase === 'idle') return;
         const s = get().settings;
-        const sec = phaseMinutes(phase, s) * 60;
+        const sec = overrideSeconds ?? phaseMinutes(phase, s) * 60;
         const prevId = get().pomodoro.scheduledNotifId;
         if (prevId) await cancelNotification(prevId);
         let notifId: string | null = null;
@@ -296,6 +330,11 @@ export const useStore = create<Store>()(
             scheduledNotifId: notifId,
           },
         }));
+      },
+
+      startQuickFocus: async (taskId) => {
+        if (taskId) set({ currentTaskId: taskId });
+        await get().startPomodoroPhase('focus', 120);
       },
 
       togglePomodoro: async () => {

@@ -36,7 +36,12 @@ export type GamificationState = {
   lastActiveDay: string | null;
   totalTasksDone: number;
   totalFocusMinutes: number;
+  jokers: number; // forgive missed days, max JOKER_CAP
+  jokerUsedToday: boolean; // surfaces "joker consommé" in UI
 };
+
+export const JOKER_CAP = 3;
+export const JOKER_INITIAL = 2;
 
 export type Routine = {
   id: string;

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddTaskSheet } from '../components/AddTaskSheet';
+import { StuckCard } from '../components/StuckCard';
 import { TaskItem } from '../components/TaskItem';
 import { useStore } from '../store';
 import { colors, radius, spacing, type } from '../theme';
@@ -9,9 +10,12 @@ import type { Task } from '../types';
 
 type Filter = 'today' | 'all' | 'done';
 
-type Props = { onStartFocus?: (taskId: string) => void };
+type Props = {
+  onStartFocus?: (taskId: string) => void;
+  onGoFocus?: () => void;
+};
 
-export const TasksScreen: React.FC<Props> = ({ onStartFocus }) => {
+export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
   const tasks = useStore((s) => s.tasks);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>('today');
@@ -61,6 +65,9 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus }) => {
         data={filtered}
         keyExtractor={(t) => t.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          filter !== 'done' && onGoFocus ? <StuckCard onGoFocus={onGoFocus} /> : null
+        }
         renderItem={({ item }) => (
           <TaskItem task={item} onStartFocus={onStartFocus} />
         )}
