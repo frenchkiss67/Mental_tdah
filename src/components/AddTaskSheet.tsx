@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -9,9 +11,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, spacing, type } from '../theme';
+import { decomposeWithAI } from '../services/ai';
 import { useStore } from '../store';
+import { colors, radius, spacing, type } from '../theme';
 import type { Priority } from '../types';
+import { decomposeTask } from '../utils';
 
 type Props = { visible: boolean; onClose: () => void };
 
@@ -22,14 +26,33 @@ const priorities: { key: Priority; label: string }[] = [
 ];
 
 export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
-  const addTask = useStore((s) => s.addTask);
+  const addTaskWithSubtasks = useStore((s) => s.addTaskWithSubtasks);
+  const settings = useStore((s) => s.settings);
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [priority, setPriority] = useState<Priority>('normal');
+  const [loading, setLoading] = useState(false);
 
-  const submit = () => {
-    if (!title.trim()) return;
-    addTask(title, note || undefined, priority);
+  const canUseAi = settings.aiDecompositionEnabled && !!settings.anthropicApiKey;
+
+  const submit = async () => {
+    const t = title.trim();
+    if (!t) return;
+    let subtasks = decomposeTask(t, note || undefined);
+
+    if (canUseAi) {
+      setLoading(true);
+      try {
+        subtasks = await decomposeWithAI(t, note || undefined, settings.anthropicApiKey!);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erreur IA';
+        Alert.alert('Décomposition IA indisponible', `${msg}\n\nFallback heuristique utilisé.`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    addTaskWithSubtasks(t, note || undefined, priority, subtasks);
     setTitle('');
     setNote('');
     setPriority('normal');
@@ -46,7 +69,9 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
         <View style={styles.sheet}>
           <Text style={styles.heading}>Nouvelle tâche</Text>
           <Text style={styles.hint}>
-            Décris la tâche simplement. On la découpe en micro-étapes automatiquement.
+            {canUseAi
+              ? 'Décris la tâche, l’IA la découpe en micro-étapes.'
+              : 'Décris simplement, on découpe automatiquement.'}
           </Text>
 
           <TextInput
@@ -56,15 +81,17 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
             value={title}
             onChangeText={setTitle}
             autoFocus
+            editable={!loading}
           />
 
           <TextInput
-            placeholder="Notes (étapes séparées par virgules, ou laisser vide)"
+            placeholder="Notes (optionnel)"
             placeholderTextColor={colors.textFaint}
             style={[styles.input, styles.multiline]}
             value={note}
             onChangeText={setNote}
             multiline
+            editable={!loading}
           />
 
           <Text style={styles.label}>Priorité</Text>
@@ -74,6 +101,7 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
                 key={p.key}
                 onPress={() => setPriority(p.key)}
                 style={[styles.pill, priority === p.key && styles.pillActive]}
+                disabled={loading}
               >
                 <Text
                   style={[styles.pillText, priority === p.key && styles.pillTextActive]}
@@ -86,10 +114,16 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
 
           <Pressable
             onPress={submit}
-            style={[styles.submit, !title.trim() && styles.submitDisabled]}
-            disabled={!title.trim()}
+            style={[styles.submit, (!title.trim() || loading) && styles.submitDisabled]}
+            disabled={!title.trim() || loading}
           >
-            <Text style={styles.submitText}>Ajouter</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitText}>
+                {canUseAi ? 'Ajouter (IA)' : 'Ajouter'}
+              </Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

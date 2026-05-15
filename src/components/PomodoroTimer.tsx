@@ -1,180 +1,141 @@
 import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, radius, spacing, type } from '../theme';
 import { useStore } from '../store';
+import { colors, radius, spacing, type } from '../theme';
 import { formatTime } from '../utils';
 
-type Phase = 'idle' | 'focus' | 'break' | 'longBreak';
+type Props = {
+  size?: number;
+  compact?: boolean;
+  onZenPress?: () => void;
+};
 
-const SIZE = 240;
-const STROKE = 14;
-const R = (SIZE - STROKE) / 2;
-const CIRC = 2 * Math.PI * R;
-
-export const PomodoroTimer: React.FC = () => {
+export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, onZenPress }) => {
   useKeepAwake();
-  const settings = useStore((s) => s.settings);
-  const hapticsEnabled = settings.hapticsEnabled;
-  const awardFocusSession = useStore((s) => s.awardFocusSession);
+  const pomodoro = useStore((s) => s.pomodoro);
+  const hapticsEnabled = useStore((s) => s.settings.hapticsEnabled);
+  const togglePomodoro = useStore((s) => s.togglePomodoro);
+  const resetPomodoro = useStore((s) => s.resetPomodoro);
 
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [running, setRunning] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(settings.focusMinutes * 60);
-  const [totalSec, setTotalSec] = useState(settings.focusMinutes * 60);
-  const [cycle, setCycle] = useState(0);
-  const interval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const STROKE = compact ? 10 : 14;
+  const R = (size - STROKE) / 2;
+  const CIRC = 2 * Math.PI * R;
 
-  const phaseMinutes = (p: Phase): number => {
-    if (p === 'focus') return settings.focusMinutes;
-    if (p === 'break') return settings.breakMinutes;
-    if (p === 'longBreak') return settings.longBreakMinutes;
-    return settings.focusMinutes;
-  };
-
-  // Keep timer aligned with current settings when idle.
+  const [, setTick] = useState(0);
   useEffect(() => {
-    if (phase === 'idle' && !running) {
-      const sec = settings.focusMinutes * 60;
-      setSecondsLeft(sec);
-      setTotalSec(sec);
+    if (!pomodoro.running || pomodoro.endsAt === null) return;
+    const id = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  }, [pomodoro.running, pomodoro.endsAt]);
+
+  const remainingSec = (() => {
+    if (pomodoro.running && pomodoro.endsAt !== null) {
+      return Math.max(0, Math.round((pomodoro.endsAt - Date.now()) / 1000));
     }
-  }, [settings.focusMinutes, phase, running]);
+    if (pomodoro.pausedSecondsLeft !== null) return pomodoro.pausedSecondsLeft;
+    return pomodoro.totalSec;
+  })();
 
-  const triggerHaptic = (kind: 'success' | 'warn') => {
-    if (!hapticsEnabled) return;
-    if (kind === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-  };
-
-  const startPhase = (p: Phase) => {
-    const sec = phaseMinutes(p) * 60;
-    setPhase(p);
-    setSecondsLeft(sec);
-    setTotalSec(sec);
-    setRunning(true);
-  };
-
-  const finishPhase = () => {
-    if (interval.current) clearInterval(interval.current);
-    interval.current = null;
-    setRunning(false);
-    triggerHaptic('success');
-
-    if (phase === 'focus') {
-      awardFocusSession(totalSec);
-      const nextCycle = cycle + 1;
-      setCycle(nextCycle);
-      const isLong =
-        settings.cyclesBeforeLongBreak > 0 &&
-        nextCycle % settings.cyclesBeforeLongBreak === 0;
-      startPhase(isLong ? 'longBreak' : 'break');
-    } else {
-      startPhase('focus');
-    }
-  };
-
-  useEffect(() => {
-    if (!running) {
-      if (interval.current) {
-        clearInterval(interval.current);
-        interval.current = null;
-      }
-      return;
-    }
-    interval.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          // schedule transition via microtask to avoid setState during setState
-          setTimeout(finishPhase, 0);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => {
-      if (interval.current) clearInterval(interval.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, phase]);
-
-  const onPrimary = () => {
-    triggerHaptic('warn');
-    if (phase === 'idle') {
-      startPhase('focus');
-      return;
-    }
-    setRunning((r) => !r);
-  };
-
-  const onReset = () => {
-    triggerHaptic('warn');
-    if (interval.current) clearInterval(interval.current);
-    interval.current = null;
-    setRunning(false);
-    setPhase('idle');
-    setCycle(0);
-    const sec = settings.focusMinutes * 60;
-    setSecondsLeft(sec);
-    setTotalSec(sec);
-  };
-
-  const pct = totalSec === 0 ? 0 : secondsLeft / totalSec;
+  const pct = pomodoro.totalSec === 0 ? 0 : remainingSec / pomodoro.totalSec;
   const dashOffset = CIRC * (1 - pct);
 
+  const triggerHaptic = () => {
+    if (!hapticsEnabled) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  };
+
+  const onPrimary = async () => {
+    triggerHaptic();
+    await togglePomodoro();
+  };
+
+  const onReset = async () => {
+    triggerHaptic();
+    await resetPomodoro();
+  };
+
   const phaseLabel =
-    phase === 'idle'
+    pomodoro.phase === 'idle'
       ? 'Prêt à démarrer'
-      : phase === 'focus'
+      : pomodoro.phase === 'focus'
         ? 'Focus'
-        : phase === 'break'
+        : pomodoro.phase === 'break'
           ? 'Petite pause'
           : 'Grande pause';
 
-  const primaryColor = phase === 'focus' || phase === 'idle' ? colors.primary : colors.accent;
+  const primaryColor =
+    pomodoro.phase === 'focus' || pomodoro.phase === 'idle' ? colors.primary : colors.accent;
+
+  const primaryLabel =
+    pomodoro.phase === 'idle' ? 'Démarrer' : pomodoro.running ? 'Pause' : 'Reprendre';
+
+  const cycleDisplay = pomodoro.cycle + (pomodoro.phase === 'focus' ? 1 : 0);
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.phaseLabel}>{phaseLabel}</Text>
-      <View style={styles.ringWrap}>
-        <Svg width={SIZE} height={SIZE}>
+      <View style={styles.phaseRow}>
+        <Text style={[styles.phaseLabel, compact && styles.phaseLabelLight]}>
+          {phaseLabel}
+        </Text>
+        {onZenPress && (
+          <Pressable onPress={onZenPress} hitSlop={8} style={styles.zenBtn}>
+            <Text style={styles.zenBtnText}>Mode zen</Text>
+          </Pressable>
+        )}
+      </View>
+      <View style={[styles.ringWrap, { width: size, height: size }]}>
+        <Svg width={size} height={size}>
           <Circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
+            cx={size / 2}
+            cy={size / 2}
             r={R}
-            stroke={colors.surfaceAlt}
+            stroke={compact ? 'rgba(255,255,255,0.12)' : colors.surfaceAlt}
             strokeWidth={STROKE}
             fill="none"
           />
           <Circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
+            cx={size / 2}
+            cy={size / 2}
             r={R}
-            stroke={primaryColor}
+            stroke={compact ? '#fff' : primaryColor}
             strokeWidth={STROKE}
             fill="none"
             strokeDasharray={`${CIRC},${CIRC}`}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
-            transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
           />
         </Svg>
         <View style={styles.ringCenter} pointerEvents="none">
-          <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
-          <Text style={styles.cycle}>Cycle {cycle + (phase === 'focus' ? 1 : 0)}</Text>
+          <Text style={[styles.time, compact && styles.timeBig]}>
+            {formatTime(remainingSec)}
+          </Text>
+          <Text style={[styles.cycle, compact && styles.cycleLight]}>Cycle {cycleDisplay}</Text>
         </View>
       </View>
 
       <View style={styles.controls}>
-        <Pressable onPress={onReset} style={[styles.btn, styles.btnSecondary]}>
-          <Text style={styles.btnTextSecondary}>Reset</Text>
-        </Pressable>
-        <Pressable onPress={onPrimary} style={[styles.btn, { backgroundColor: primaryColor }]}>
-          <Text style={styles.btnText}>
-            {phase === 'idle' ? 'Démarrer' : running ? 'Pause' : 'Reprendre'}
+        <Pressable
+          onPress={onReset}
+          style={[styles.btn, compact ? styles.btnSecondaryDark : styles.btnSecondary]}
+        >
+          <Text
+            style={[
+              styles.btnTextSecondary,
+              compact && { color: 'rgba(255,255,255,0.85)' },
+            ]}
+          >
+            Reset
           </Text>
+        </Pressable>
+        <Pressable
+          onPress={onPrimary}
+          style={[styles.btn, { backgroundColor: compact ? '#fff' : primaryColor }]}
+        >
+          <Text style={[styles.btnText, compact && { color: '#1B1830' }]}>{primaryLabel}</Text>
         </Pressable>
       </View>
     </View>
@@ -183,15 +144,27 @@ export const PomodoroTimer: React.FC = () => {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: spacing.lg },
-  phaseLabel: { ...type.h2, color: colors.textMuted },
-  ringWrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
-  ringCenter: {
-    position: 'absolute',
+  phaseRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
   },
+  phaseLabel: { ...type.h2, color: colors.textMuted },
+  phaseLabelLight: { color: 'rgba(255,255,255,0.7)' },
+  zenBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceAlt,
+  },
+  zenBtnText: { ...type.tiny, color: colors.primary, fontWeight: '700' },
+  ringWrap: { alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   time: { fontSize: 48, fontWeight: '800', color: colors.text },
+  timeBig: { fontSize: 64, color: '#fff' },
   cycle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  cycleLight: { color: 'rgba(255,255,255,0.6)' },
   controls: { flexDirection: 'row', gap: spacing.md },
   btn: {
     paddingHorizontal: spacing.xl,
@@ -201,6 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnSecondary: { backgroundColor: colors.surfaceAlt },
+  btnSecondaryDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
   btnText: { color: '#fff', ...type.body, fontWeight: '700' },
   btnTextSecondary: { color: colors.textMuted, ...type.body, fontWeight: '700' },
 });

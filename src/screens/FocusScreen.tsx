@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PomodoroTimer } from '../components/PomodoroTimer';
+import { ZenMode } from '../components/ZenMode';
 import { useStore } from '../store';
 import { colors, radius, spacing, type } from '../theme';
 
@@ -13,6 +14,7 @@ export const FocusScreen: React.FC = () => {
   const currentTaskId = useStore((s) => s.currentTaskId);
   const tasks = useStore((s) => s.tasks);
   const setCurrentTask = useStore((s) => s.setCurrentTask);
+  const [zenOpen, setZenOpen] = useState(false);
 
   const currentTask = tasks.find((t) => t.id === currentTaskId) ?? null;
 
@@ -35,7 +37,7 @@ export const FocusScreen: React.FC = () => {
         )}
 
         <View style={styles.timerCard}>
-          <PomodoroTimer />
+          <PomodoroTimer onZenPress={() => setZenOpen(true)} />
         </View>
 
         <View style={styles.presets}>
@@ -63,6 +65,8 @@ export const FocusScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      <ZenMode visible={zenOpen} onClose={() => setZenOpen(false)} />
     </SafeAreaView>
   );
 };

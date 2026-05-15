@@ -1,24 +1,56 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GamificationState, Settings, Task } from './types';
+import {
+  cancelNotification,
+  scheduleDailyReminder,
+  scheduleFocusEnd,
+} from './services/notifications';
+import type {
+  GamificationState,
+  PomodoroPhase,
+  PomodoroState,
+  Routine,
+  Settings,
+  Subtask,
+  Task,
+} from './types';
 import { daysBetween, decomposeTask, todayKey, uid } from './utils';
 
 type Store = {
   tasks: Task[];
+  routines: Routine[];
   gamification: GamificationState;
   settings: Settings;
+  pomodoro: PomodoroState;
   currentTaskId: string | null;
   hydrated: boolean;
 
   addTask: (title: string, note?: string, priority?: Task['priority']) => string;
+  addTaskWithSubtasks: (
+    title: string,
+    note: string | undefined,
+    priority: Task['priority'],
+    subtasks: Subtask[],
+  ) => string;
   toggleTask: (id: string) => void;
   removeTask: (id: string) => void;
   toggleSubtask: (taskId: string, subId: string) => void;
   setCurrentTask: (id: string | null) => void;
 
+  addRoutine: (input: Omit<Routine, 'id' | 'streak' | 'lastCompletedDay' | 'createdAt'>) => string;
+  toggleRoutineToday: (id: string) => void;
+  removeRoutine: (id: string) => Promise<void>;
+
   awardFocusSession: (durationSec: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  applyDailyReminder: (enabled: boolean, hour: number, minute: number) => Promise<void>;
+
+  startPomodoroPhase: (phase: PomodoroPhase) => Promise<void>;
+  togglePomodoro: () => Promise<void>;
+  resetPomodoro: () => Promise<void>;
+  advancePomodoroPhase: () => Promise<void>;
+
   resetAll: () => void;
   _markHydrated: () => void;
 };
@@ -38,6 +70,28 @@ const initialSettings: Settings = {
   longBreakMinutes: 15,
   cyclesBeforeLongBreak: 4,
   hapticsEnabled: true,
+  notificationsEnabled: true,
+  dailyReminderEnabled: false,
+  dailyReminderHour: 9,
+  dailyReminderMinute: 0,
+  aiDecompositionEnabled: false,
+};
+
+const initialPomodoro: PomodoroState = {
+  phase: 'idle',
+  running: false,
+  endsAt: null,
+  pausedSecondsLeft: null,
+  totalSec: 15 * 60,
+  cycle: 0,
+  scheduledNotifId: null,
+};
+
+const phaseMinutes = (p: PomodoroPhase, s: Settings): number => {
+  if (p === 'focus') return s.focusMinutes;
+  if (p === 'break') return s.breakMinutes;
+  if (p === 'longBreak') return s.longBreakMinutes;
+  return s.focusMinutes;
 };
 
 const bumpStreak = (state: GamificationState): GamificationState => {
@@ -55,8 +109,10 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       tasks: [],
+      routines: [],
       gamification: initialGamification,
       settings: initialSettings,
+      pomodoro: initialPomodoro,
       currentTaskId: null,
       hydrated: false,
 
@@ -68,6 +124,21 @@ export const useStore = create<Store>()(
           note: note?.trim() || undefined,
           priority,
           subtasks: decomposeTask(title, note),
+          done: false,
+          createdAt: Date.now(),
+        };
+        set((s) => ({ tasks: [task, ...s.tasks] }));
+        return id;
+      },
+
+      addTaskWithSubtasks: (title, note, priority, subtasks) => {
+        const id = uid();
+        const task: Task = {
+          id,
+          title: title.trim(),
+          note: note?.trim() || undefined,
+          priority,
+          subtasks,
           done: false,
           createdAt: Date.now(),
         };
@@ -117,6 +188,59 @@ export const useStore = create<Store>()(
 
       setCurrentTask: (id) => set({ currentTaskId: id }),
 
+      addRoutine: (input) => {
+        const id = uid();
+        const routine: Routine = {
+          id,
+          title: input.title.trim(),
+          emoji: input.emoji,
+          scheduledTime: input.scheduledTime,
+          days: input.days,
+          streak: 0,
+          lastCompletedDay: null,
+          createdAt: Date.now(),
+          notificationId: input.notificationId,
+        };
+        set((s) => ({ routines: [...s.routines, routine] }));
+        return id;
+      },
+
+      toggleRoutineToday: (id) => {
+        set((s) => {
+          const today = todayKey();
+          const routines = s.routines.map((r) => {
+            if (r.id !== id) return r;
+            if (r.lastCompletedDay === today) {
+              return { ...r, lastCompletedDay: null, streak: Math.max(0, r.streak - 1) };
+            }
+            const continuous =
+              r.lastCompletedDay && daysBetween(r.lastCompletedDay, today) === 1;
+            return {
+              ...r,
+              lastCompletedDay: today,
+              streak: continuous ? r.streak + 1 : 1,
+            };
+          });
+          const target = routines.find((r) => r.id === id);
+          if (target?.lastCompletedDay === today) {
+            const nextGam = bumpStreak({
+              ...s.gamification,
+              xp: s.gamification.xp + 5,
+            });
+            return { routines, gamification: nextGam };
+          }
+          return { routines };
+        });
+      },
+
+      removeRoutine: async (id) => {
+        const target = get().routines.find((r) => r.id === id);
+        if (target?.notificationId) {
+          await cancelNotification(target.notificationId);
+        }
+        set((s) => ({ routines: s.routines.filter((r) => r.id !== id) }));
+      },
+
       awardFocusSession: (durationSec) =>
         set((s) => {
           const minutes = Math.round(durationSec / 60);
@@ -130,11 +254,130 @@ export const useStore = create<Store>()(
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
+      applyDailyReminder: async (enabled, hour, minute) => {
+        const prevId = get().settings.dailyReminderId;
+        if (prevId) {
+          await cancelNotification(prevId);
+        }
+        let id: string | undefined;
+        if (enabled) {
+          const scheduled = await scheduleDailyReminder(hour, minute);
+          id = scheduled ?? undefined;
+        }
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            dailyReminderEnabled: enabled && !!id,
+            dailyReminderHour: hour,
+            dailyReminderMinute: minute,
+            dailyReminderId: id,
+          },
+        }));
+      },
+
+      startPomodoroPhase: async (phase) => {
+        if (phase === 'idle') return;
+        const s = get().settings;
+        const sec = phaseMinutes(phase, s) * 60;
+        const prevId = get().pomodoro.scheduledNotifId;
+        if (prevId) await cancelNotification(prevId);
+        let notifId: string | null = null;
+        if (s.notificationsEnabled) {
+          notifId = await scheduleFocusEnd(sec, phase);
+        }
+        set((cur) => ({
+          pomodoro: {
+            phase,
+            running: true,
+            endsAt: Date.now() + sec * 1000,
+            pausedSecondsLeft: null,
+            totalSec: sec,
+            cycle: cur.pomodoro.cycle,
+            scheduledNotifId: notifId,
+          },
+        }));
+      },
+
+      togglePomodoro: async () => {
+        const { pomodoro, settings } = get();
+        if (pomodoro.phase === 'idle') {
+          await get().startPomodoroPhase('focus');
+          return;
+        }
+        if (pomodoro.running) {
+          if (pomodoro.scheduledNotifId) {
+            await cancelNotification(pomodoro.scheduledNotifId);
+          }
+          const remaining = pomodoro.endsAt
+            ? Math.max(0, Math.round((pomodoro.endsAt - Date.now()) / 1000))
+            : pomodoro.totalSec;
+          set({
+            pomodoro: {
+              ...pomodoro,
+              running: false,
+              endsAt: null,
+              pausedSecondsLeft: remaining,
+              scheduledNotifId: null,
+            },
+          });
+          return;
+        }
+        const remaining = pomodoro.pausedSecondsLeft ?? pomodoro.totalSec;
+        let notifId: string | null = null;
+        if (settings.notificationsEnabled) {
+          notifId = await scheduleFocusEnd(remaining, pomodoro.phase);
+        }
+        set({
+          pomodoro: {
+            ...pomodoro,
+            running: true,
+            endsAt: Date.now() + remaining * 1000,
+            pausedSecondsLeft: null,
+            scheduledNotifId: notifId,
+          },
+        });
+      },
+
+      resetPomodoro: async () => {
+        const { pomodoro, settings } = get();
+        if (pomodoro.scheduledNotifId) {
+          await cancelNotification(pomodoro.scheduledNotifId);
+        }
+        set({
+          pomodoro: {
+            phase: 'idle',
+            running: false,
+            endsAt: null,
+            pausedSecondsLeft: null,
+            totalSec: settings.focusMinutes * 60,
+            cycle: 0,
+            scheduledNotifId: null,
+          },
+        });
+      },
+
+      advancePomodoroPhase: async () => {
+        const { pomodoro, settings } = get();
+        if (pomodoro.phase === 'focus') {
+          get().awardFocusSession(pomodoro.totalSec);
+          const nextCycle = pomodoro.cycle + 1;
+          const isLong =
+            settings.cyclesBeforeLongBreak > 0 &&
+            nextCycle % settings.cyclesBeforeLongBreak === 0;
+          set((cur) => ({ pomodoro: { ...cur.pomodoro, cycle: nextCycle } }));
+          await get().startPomodoroPhase(isLong ? 'longBreak' : 'break');
+        } else {
+          await get().startPomodoroPhase('focus');
+        }
+      },
+
       resetAll: () =>
         set({
           tasks: [],
+          routines: [],
           gamification: initialGamification,
           settings: initialSettings,
+          pomodoro: initialPomodoro,
           currentTaskId: null,
         }),
 
@@ -145,8 +388,10 @@ export const useStore = create<Store>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({
         tasks: s.tasks,
+        routines: s.routines,
         gamification: s.gamification,
         settings: s.settings,
+        // Don't persist pomodoro live state — start fresh each app launch.
         currentTaskId: s.currentTaskId,
       }),
       onRehydrateStorage: () => (state) => {

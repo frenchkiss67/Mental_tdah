@@ -7,9 +7,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FocusScreen } from './src/screens/FocusScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { RoutinesScreen } from './src/screens/RoutinesScreen';
 import { TasksScreen } from './src/screens/TasksScreen';
+import { setupAndroidChannel } from './src/services/notifications';
 import { useStore } from './src/store';
 import { colors, type } from './src/theme';
+import { usePomodoroEngine } from './src/usePomodoroEngine';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,52 +51,66 @@ const SplashGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const AppCore: React.FC = () => {
+  usePomodoroEngine();
+  React.useEffect(() => {
+    setupAndroidChannel();
+  }, []);
+
+  return (
+    <NavigationContainer
+      theme={{
+        dark: false,
+        colors: {
+          primary: colors.primary,
+          background: colors.bg,
+          card: colors.surface,
+          text: colors.text,
+          border: colors.border,
+          notification: colors.primary,
+        },
+      }}
+    >
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: 64,
+            paddingTop: 8,
+            paddingBottom: 8,
+          },
+          tabBarIcon: ({ focused }) => {
+            const label =
+              route.name === 'Tasks'
+                ? 'Tâches'
+                : route.name === 'Routines'
+                  ? 'Routines'
+                  : route.name === 'Focus'
+                    ? 'Focus'
+                    : 'Profil';
+            return <TabIcon label={label} focused={focused} />;
+          },
+        })}
+      >
+        <Tab.Screen name="Tasks" component={TasksTab} />
+        <Tab.Screen name="Routines" component={RoutinesScreen} />
+        <Tab.Screen name="Focus" component={FocusScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+};
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
         <SplashGate>
-          <NavigationContainer
-            theme={{
-              dark: false,
-              colors: {
-                primary: colors.primary,
-                background: colors.bg,
-                card: colors.surface,
-                text: colors.text,
-                border: colors.border,
-                notification: colors.primary,
-              },
-            }}
-          >
-            <Tab.Navigator
-              screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarShowLabel: false,
-                tabBarStyle: {
-                  backgroundColor: colors.surface,
-                  borderTopColor: colors.border,
-                  height: 64,
-                  paddingTop: 8,
-                  paddingBottom: 8,
-                },
-                tabBarIcon: ({ focused }) => {
-                  const label =
-                    route.name === 'Tasks'
-                      ? 'Tâches'
-                      : route.name === 'Focus'
-                        ? 'Focus'
-                        : 'Profil';
-                  return <TabIcon label={label} focused={focused} />;
-                },
-              })}
-            >
-              <Tab.Screen name="Tasks" component={TasksTab} />
-              <Tab.Screen name="Focus" component={FocusScreen} />
-              <Tab.Screen name="Profile" component={ProfileScreen} />
-            </Tab.Navigator>
-          </NavigationContainer>
+          <AppCore />
         </SplashGate>
       </SafeAreaProvider>
     </GestureHandlerRootView>
