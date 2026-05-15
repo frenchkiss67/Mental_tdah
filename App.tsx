@@ -13,6 +13,7 @@ import { setupAndroidChannel } from './src/services/notifications';
 import { useStore } from './src/store';
 import { type ColorScheme, lightColors, type, useColors } from './src/theme';
 import { usePomodoroEngine } from './src/usePomodoroEngine';
+import { useSoundscapeEngine } from './src/useSoundscapeEngine';
 
 const Tab = createBottomTabNavigator();
 
@@ -66,6 +67,7 @@ const SplashGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppCore: React.FC = () => {
   usePomodoroEngine();
+  useSoundscapeEngine();
   const c = useColors();
   const themePref = useStore((s) => s.settings.theme);
   const system = useColorScheme();

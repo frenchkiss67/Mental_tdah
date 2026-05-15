@@ -13,7 +13,7 @@ Contexte d'orientation pour assister sur ce repo. À lire avant tout travail non
 - **React Navigation 6** bottom tabs (4 onglets : Tâches / Routines / Focus / Profil)
 - **Zustand 4** + middleware `persist` avec AsyncStorage
 - **react-native-svg** pour l'anneau Pomodoro
-- **expo-notifications** (locales uniquement), **expo-haptics**, **expo-keep-awake**
+- **expo-notifications** (locales uniquement), **expo-haptics**, **expo-keep-awake**, **expo-av** (soundscapes)
 
 Pas d'EAS Build configuré : on développe via Expo Go (`npm start`). Pas d'iOS/Android natif dans le repo.
 
@@ -38,9 +38,11 @@ src/
   utils.ts                       uid, todayKey, daysBetween, formatTime, decomposeTask (heuristique),
                                  levelFromXp, pickWeightedRandomTask
   usePomodoroEngine.ts           Tick global qui détecte les fins de phase (monté UNE fois dans App.tsx)
+  useSoundscapeEngine.ts         Charge/décharge Audio.Sound piloté par le store (monté UNE fois)
   services/
     notifications.ts             Wrappers expo-notifications (focus end, daily reminder, routine)
     ai.ts                        Appel direct API Anthropic, BYOK (clé dans settings)
+    soundscapes.ts               Catalogue typé { id, title, emoji, source: require(...) }
   components/
     AddTaskSheet.tsx             Modal création tâche (avec option décomposition IA)
     AddRoutineSheet.tsx          Modal création routine (jours + heure)
@@ -50,6 +52,7 @@ src/
     PomodoroTimer.tsx            Anneau SVG + contrôles, pure view qui lit le store
     TaskItem.tsx                 Carte tâche dépliable, sous-tâches éditables, badge "stale" 7j+
     RoutineItem.tsx              Ligne routine
+    SoundscapePicker.tsx         4 ambiances + Aucune + cycle volume (doux/moyen/fort)
     StuckCard.tsx                Boutons "Juste 2 min" + "Choisis pour moi", adapté à l'énergie
     XPBar.tsx                    Barre XP + niveau
     ZenMode.tsx                  Modal plein écran toujours sombre
@@ -162,6 +165,17 @@ Accessible via le bouton "Trop ?" en haut à droite de l'onglet Tâches. Modale 
 
 Le `StuckCard` lit `mood` et passe en variante "low-energy" quand `energyValue <= 2`. Variante : message changé en "Énergie basse, on y va doucement", bouton "Choisis pour moi" déplacé en lien secondaire (moins d'agressivité). C'est le seul comportement adaptatif basé sur l'énergie pour l'instant — si tu en ajoutes (suggestions de tâches courtes, masquage routines lourdes, etc.), passe par le même check `energyDay === todayKey() && energyValue !== null`.
 
+### Soundscapes
+
+`useSoundscapeEngine` est monté **une seule fois** dans `App.tsx > AppCore`, à côté de `usePomodoroEngine`. Il observe `soundscape: { id, playing, volume }` du store et synchronise un unique `Audio.Sound` :
+- Changement d'`id` → unload du précédent puis load du nouveau (avec `isLooping: true`)
+- Toggle `playing` → `playAsync()` / `pauseAsync()`
+- `volume` → `setVolumeAsync()`
+
+Le state `soundscape` n'est **pas persisté** (`partialize` l'exclut implicitement — on redémarre toujours "Aucune"). Si un chargement échoue (typique tant que `assets/audio/*.mp3` contient les placeholders du repo), `loadFailedIdRef` mémorise l'id et bascule le state sur `{ id: null, playing: false }` pour éviter une boucle de retry.
+
+Les fichiers audio vivent dans `assets/audio/` ; voir `assets/audio/README.md` pour les sources CC0 recommandées (Freesound + filtre licence CC0). Les placeholders du repo sont silencieux et ~2.5 KB chacun — **ne pas les considérer comme un audio fonctionnel**.
+
 ## Ce qui n'existe pas (encore)
 
 - Sync cloud / comptes / multi-device
@@ -169,8 +183,8 @@ Le `StuckCard` lit `mood` et passe en variante "low-energy" quand `energyValue <
 - Widget iOS / Share extension (demande un build EAS, pas Expo Go)
 - Tests unitaires ou e2e
 - CI
-- Soundscapes (brown noise, lofi) — sur la roadmap courte
 - Estimation de temps par micro-étape — sur la roadmap courte
+- Audio CC0 réel dans `assets/audio/` (les placeholders ne jouent pas de son)
 - Capture vocale "vraie" (Whisper) — bloquée par Expo Go, fallback actuel = hint dictée native du clavier
 - Suivi médication explicite (passe par les routines pour l'instant)
 

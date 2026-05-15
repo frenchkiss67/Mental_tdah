@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PomodoroTimer } from '../components/PomodoroTimer';
+import { SoundscapePicker } from '../components/SoundscapePicker';
 import { ZenMode } from '../components/ZenMode';
 import { useStore } from '../store';
 import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
@@ -40,6 +41,10 @@ export const FocusScreen: React.FC = () => {
 
         <View style={styles.timerCard}>
           <PomodoroTimer onZenPress={() => setZenOpen(true)} />
+        </View>
+
+        <View style={styles.soundCard}>
+          <SoundscapePicker />
         </View>
 
         <View style={styles.presets}>
@@ -91,6 +96,13 @@ const makeStyles = (c: ColorScheme) =>
       backgroundColor: c.surface,
       borderRadius: radius.lg,
       padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    soundCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.md,
       borderWidth: 1,
       borderColor: c.border,
     },

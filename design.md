@@ -168,6 +168,12 @@ Un onglet permanent pour "crise" serait stigmatisant — tu le verrais tous les 
 
 Suivre son humeur sur 30 jours et la voir descendre est un parfait moyen de se sentir mal. On veut juste le **présent** : aujourd'hui je suis comment, et que l'app adapte. Si on ajoute un historique un jour, ce sera caché derrière une action explicite et présenté avec compassion.
 
+### Pourquoi 4 ambiances et pourquoi cheminée plutôt que lofi
+
+Brown noise, pluie, forêt, cheminée. Quatre suffit : trois c'est trop court pour couvrir les goûts (certains TDAH détestent la pluie), cinq c'est de la friction décisionnelle. Pas de lofi parce que (a) le CC0 musical est rare et de qualité variable et (b) la musique structurée peut accrocher l'attention au lieu d'être de fond. Le crépitement de feu joue le même rôle d'ancrage sonore sans le piège mélodique.
+
+L'audio est intentionnellement limité à 3 niveaux de volume (doux/moyen/fort), pas un slider continu. Trois choix tranchés > infinité de positions à arbitrer.
+
 ### Pourquoi pas de "vraie" capture vocale
 
 Une vraie transcription vocale (Whisper, Google Speech) nécessite soit un build EAS, soit une clé API externe avec coût. À ce stade, on s'appuie sur la **dictée native du clavier OS** (déjà présente, gratuite, locale) avec un simple hint dans le formulaire d'ajout. La majorité des utilisateurs ignore cette feature → la mentionner suffit à débloquer 80% du bénéfice. Le reste viendra avec EAS Build.
@@ -187,12 +193,12 @@ Une vraie transcription vocale (Whisper, Google Speech) nécessite soit un build
 
 Par ordre de leverage estimé :
 
-1. **Soundscapes intégrés** (brown noise, lofi). Différenciation forte vs Forest / Focusmate qui n'en intègrent pas. Faible coût technique (audio files + lecteur).
-2. **Estimation de temps par micro-étape** (mitigation cécité temporelle). Goblin Estimator le fait sur le web, pas en mobile intégré.
-3. **Body doubling lite** : compteur anonyme "X personnes focus en ce moment" + ambient sound partagé.
-4. **Widget iOS et Share Extension** (nécessite EAS Build, sortie d'Expo Go). Capture friction = 0.
-5. **Suivi médication explicite** avec timeline + correlation simple avec productivité.
-6. **Brain dump inbox** : capture sans catégorisation, traitement plus tard.
+1. **Estimation de temps par micro-étape** (mitigation cécité temporelle). Goblin Estimator le fait sur le web, pas en mobile intégré.
+2. **Body doubling lite** : compteur anonyme "X personnes focus en ce moment" + ambient sound partagé.
+3. **Widget iOS et Share Extension** (nécessite EAS Build, sortie d'Expo Go). Capture friction = 0.
+4. **Suivi médication explicite** comme type dédié (extension du modèle Routine), avec timeline.
+5. **Onboarding minimal** : 2-3 écrans, préset focus + énergie matin par défaut.
+6. **Tests unitaires ciblés** sur logique pure : `bumpStreak`, `pickWeightedRandomTask`, `decomposeTask`, jokers.
 
 ## Roadmap monétisation
 

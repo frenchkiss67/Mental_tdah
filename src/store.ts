@@ -17,6 +17,8 @@ import {
   type PomodoroState,
   type Routine,
   type Settings,
+  type SoundscapeId,
+  type SoundscapeState,
   type Subtask,
   type Task,
 } from './types';
@@ -29,6 +31,7 @@ type Store = {
   gamification: GamificationState;
   settings: Settings;
   pomodoro: PomodoroState;
+  soundscape: SoundscapeState;
   mood: Mood;
   currentTaskId: string | null;
   hydrated: boolean;
@@ -59,6 +62,10 @@ type Store = {
 
   setEnergy: (value: EnergyLevel) => void;
   clearEnergy: () => void;
+
+  selectSoundscape: (id: SoundscapeId | null) => void;
+  toggleSoundscape: () => void;
+  setSoundscapeVolume: (volume: number) => void;
 
   awardFocusSession: (durationSec: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
@@ -102,6 +109,12 @@ const initialSettings: Settings = {
 const initialMood: Mood = {
   energyDay: null,
   energyValue: null,
+};
+
+const initialSoundscape: SoundscapeState = {
+  id: null,
+  playing: false,
+  volume: 0.6,
 };
 
 const initialPomodoro: PomodoroState = {
@@ -171,6 +184,7 @@ export const useStore = create<Store>()(
       mood: initialMood,
       settings: initialSettings,
       pomodoro: initialPomodoro,
+      soundscape: initialSoundscape,
       currentTaskId: null,
       hydrated: false,
 
@@ -367,6 +381,25 @@ export const useStore = create<Store>()(
       clearEnergy: () =>
         set({ mood: { energyDay: null, energyValue: null } }),
 
+      selectSoundscape: (id) =>
+        set((s) => ({
+          soundscape: { ...s.soundscape, id, playing: id !== null },
+        })),
+
+      toggleSoundscape: () =>
+        set((s) => {
+          if (!s.soundscape.id) return s;
+          return { soundscape: { ...s.soundscape, playing: !s.soundscape.playing } };
+        }),
+
+      setSoundscapeVolume: (volume) =>
+        set((s) => ({
+          soundscape: {
+            ...s.soundscape,
+            volume: Math.max(0, Math.min(1, volume)),
+          },
+        })),
+
       awardFocusSession: (durationSec) =>
         set((s) => {
           const minutes = Math.round(durationSec / 60);
@@ -510,6 +543,7 @@ export const useStore = create<Store>()(
           gamification: initialGamification,
           settings: initialSettings,
           pomodoro: initialPomodoro,
+          soundscape: initialSoundscape,
           mood: initialMood,
           currentTaskId: null,
         }),

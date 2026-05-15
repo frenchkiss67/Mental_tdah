@@ -55,6 +55,14 @@ export type Routine = {
   notificationId?: string;
 };
 
+export type SoundscapeId = 'brown' | 'rain' | 'forest' | 'fire';
+
+export type SoundscapeState = {
+  id: SoundscapeId | null;
+  playing: boolean;
+  volume: number; // 0..1
+};
+
 export type EnergyLevel = 1 | 2 | 3 | 4;
 
 export type Mood = {
