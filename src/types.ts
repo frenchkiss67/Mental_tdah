@@ -55,6 +55,13 @@ export type Routine = {
   notificationId?: string;
 };
 
+export type EnergyLevel = 1 | 2 | 3 | 4;
+
+export type Mood = {
+  energyDay: string | null; // todayKey when energyValue was set
+  energyValue: EnergyLevel | null;
+};
+
 export type Note = {
   id: string;
   text: string;

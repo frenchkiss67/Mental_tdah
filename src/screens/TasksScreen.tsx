@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddTaskSheet } from '../components/AddTaskSheet';
+import { CrisisModal } from '../components/CrisisModal';
+import { EnergyCheck } from '../components/EnergyCheck';
 import { NotesInbox } from '../components/NotesInbox';
 import { StuckCard } from '../components/StuckCard';
 import { TaskItem } from '../components/TaskItem';
@@ -41,6 +43,7 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
   const tasks = useStore((s) => s.tasks);
   const gamification = useStore((s) => s.gamification);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [crisisOpen, setCrisisOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>('today');
 
   const sortedNotDone = useMemo(() => {
@@ -84,8 +87,19 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
   const Header = (
     <>
       <View style={styles.header}>
-        <Text style={styles.heading}>Tâches</Text>
-        <Text style={styles.sub}>Une étape à la fois. Tu peux le faire.</Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heading}>Tâches</Text>
+            <Text style={styles.sub}>Une étape à la fois. Tu peux le faire.</Text>
+          </View>
+          <Pressable
+            onPress={() => setCrisisOpen(true)}
+            style={styles.crisisBtn}
+            hitSlop={8}
+          >
+            <Text style={styles.crisisBtnText}>Trop ?</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.filterRow}>
@@ -149,6 +163,7 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
           stickySectionHeadersEnabled={false}
         />
         <AddTaskSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+        <CrisisModal visible={crisisOpen} onClose={() => setCrisisOpen(false)} />
         <Pressable style={styles.fab} onPress={() => setSheetOpen(true)}>
           <Text style={styles.fabText}>＋</Text>
         </Pressable>
@@ -167,6 +182,7 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
+            <EnergyCheck />
             <NotesInbox />
             {onGoFocus && <StuckCard onGoFocus={onGoFocus} />}
           </>
@@ -187,6 +203,7 @@ export const TasksScreen: React.FC<Props> = ({ onStartFocus, onGoFocus }) => {
       </Pressable>
 
       <AddTaskSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <CrisisModal visible={crisisOpen} onClose={() => setCrisisOpen(false)} />
     </SafeAreaView>
   );
 };
@@ -195,8 +212,18 @@ const makeStyles = (c: ColorScheme) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.bg },
     header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     heading: { ...type.h1, color: c.text },
     sub: { ...type.small, color: c.textMuted, marginTop: spacing.xs },
+    crisisBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    crisisBtnText: { ...type.small, color: c.text, fontWeight: '700' },
     filterRow: {
       flexDirection: 'row',
       gap: spacing.sm,

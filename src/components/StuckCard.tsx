@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useStore } from '../store';
 import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
-import { pickWeightedRandomTask } from '../utils';
+import { pickWeightedRandomTask, todayKey } from '../utils';
 
 type Props = {
   onGoFocus: () => void;
@@ -12,11 +12,15 @@ export const StuckCard: React.FC<Props> = ({ onGoFocus }) => {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const tasks = useStore((s) => s.tasks);
+  const mood = useStore((s) => s.mood);
   const setCurrentTask = useStore((s) => s.setCurrentTask);
   const startQuickFocus = useStore((s) => s.startQuickFocus);
 
   const pending = tasks.filter((t) => !t.done);
   if (pending.length === 0) return null;
+
+  const lowEnergy =
+    mood.energyDay === todayKey() && mood.energyValue !== null && mood.energyValue <= 2;
 
   const onPickForMe = () => {
     const t = pickWeightedRandomTask(tasks);
@@ -47,17 +51,28 @@ export const StuckCard: React.FC<Props> = ({ onGoFocus }) => {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>Bloqué·e ?</Text>
+      <Text style={styles.label}>
+        {lowEnergy ? 'Énergie basse, on y va doucement' : 'Bloqué·e ?'}
+      </Text>
       <View style={styles.btnRow}>
         <Pressable onPress={onTwoMinutes} style={[styles.btn, styles.btnPrimary]}>
           <Text style={styles.btnPrimaryText}>Juste 2 min</Text>
           <Text style={styles.btnSubLight}>aucun engagement</Text>
         </Pressable>
-        <Pressable onPress={onPickForMe} style={[styles.btn, styles.btnSecondary]}>
-          <Text style={styles.btnSecondaryText}>Choisis pour moi</Text>
-          <Text style={styles.btnSubMuted}>pas de décision</Text>
-        </Pressable>
+        {!lowEnergy && (
+          <Pressable onPress={onPickForMe} style={[styles.btn, styles.btnSecondary]}>
+            <Text style={styles.btnSecondaryText}>Choisis pour moi</Text>
+            <Text style={styles.btnSubMuted}>pas de décision</Text>
+          </Pressable>
+        )}
       </View>
+      {lowEnergy && (
+        <Pressable onPress={onPickForMe} hitSlop={6} style={styles.subtleLink}>
+          <Text style={styles.subtleLinkText}>
+            ou choisis-moi quand même une tâche
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 };
@@ -96,4 +111,6 @@ const makeStyles = (c: ColorScheme) =>
     btnSecondaryText: { color: c.text, ...type.body, fontWeight: '700' },
     btnSubLight: { ...type.tiny, color: 'rgba(255,255,255,0.75)' },
     btnSubMuted: { ...type.tiny, color: c.textMuted },
+    subtleLink: { alignItems: 'center', paddingTop: spacing.xs },
+    subtleLinkText: { ...type.small, color: c.textMuted, textDecorationLine: 'underline' },
   });

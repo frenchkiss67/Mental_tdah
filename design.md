@@ -19,6 +19,15 @@ Le TDAH n'est pas un déficit de motivation, c'est un déficit d'initiation. Tou
 - Un bouton **Choisis pour moi** qui tire au sort une tâche en cours, pondérée par priorité, pour by-passer la paralysie décisionnelle.
 - Une **inbox "Vider la tête"** en haut de l'onglet Tâches : un seul champ texte, capture immédiate sans catégorisation. La pensée est attrapée d'abord, traitée plus tard (convertie en tâche ou archivée). Le but est de ne *jamais* perdre une idée à cause de la friction "où je la range ?".
 
+### 1bis. Régulation émotionnelle visible
+
+Le TDAH adulte vient souvent avec dysrégulation émotionnelle et RSD (rejection sensitive dysphoria). Aucune app TDAH grand public ne traite ce volet. On l'aborde via deux gestes :
+
+- **Bouton "Trop ?"** présent dans le header de l'onglet Tâches. Un tap → modale plein écran avec respiration 4-7-8 animée et une suggestion d'ancrage tirée au sort ("Bois un verre d'eau", "Trouve 3 choses bleues autour de toi"). Pas de XP, pas de série, pas de pression. Une seule action : "Je peux y aller" quand prêt.
+- **Check d'énergie matin** (1 swipe, 4 emojis, 1 fois par jour). Quand l'énergie est basse, le `StuckCard` change de discours et minimise l'option "Choisis pour moi" (qui demande encore une mini-décision). Le message devient "Énergie basse, on y va doucement" et seul "Juste 2 min" reste mis en avant.
+
+L'idée : **l'app comprend que tu n'es pas dans le même état tous les jours**, et adapte ses suggestions sans interroger ni juger.
+
 ### 2. Compassion intégrée, pas la honte par défaut
 
 Les apps de productivité punissent l'échec. Une série Duolingo qui casse à 87 jours fait plus mal qu'elle ne motive — pour un cerveau TDAH, c'est un déclencheur d'abandon total.
@@ -150,6 +159,14 @@ Le TDAH a une mémoire émotionnelle distordue qui efface les accomplissements (
 ### Pourquoi marquer les tâches "stale" mais ne rien forcer
 
 Une tâche non-faite depuis 7+ jours obtient une bordure pointillée et un petit "{n}j". On la rend visible, on ne la juge pas. L'utilisateur peut choisir de la relancer, l'éditer (sous-tâches modifiables maintenant), ou la supprimer sans culpabilité. Beaucoup d'apps suppriment ou archivent automatiquement les vieilles tâches — c'est en fait dévastateur pour quelqu'un qui repousse les choses justement parce qu'elles l'angoissent. Notre version : la tâche reste là, douce, voyante, mais on ne fait rien sans accord.
+
+### Pourquoi le mode crise est-il une modale et pas un onglet
+
+Un onglet permanent pour "crise" serait stigmatisant — tu le verrais tous les jours. Un bouton discret "Trop ?" dans le header est trouvable quand tu en as besoin et invisible le reste du temps. C'est aussi pour ça qu'il s'appelle "Trop ?" et pas "Crise" ou "Urgence" : un mot du quotidien, pas un mot clinique.
+
+### Pourquoi le check d'énergie ne crée pas de courbe / dashboard
+
+Suivre son humeur sur 30 jours et la voir descendre est un parfait moyen de se sentir mal. On veut juste le **présent** : aujourd'hui je suis comment, et que l'app adapte. Si on ajoute un historique un jour, ce sera caché derrière une action explicite et présenté avec compassion.
 
 ### Pourquoi pas de "vraie" capture vocale
 

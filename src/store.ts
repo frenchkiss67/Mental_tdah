@@ -9,7 +9,9 @@ import {
 import {
   JOKER_CAP,
   JOKER_INITIAL,
+  type EnergyLevel,
   type GamificationState,
+  type Mood,
   type Note,
   type PomodoroPhase,
   type PomodoroState,
@@ -27,6 +29,7 @@ type Store = {
   gamification: GamificationState;
   settings: Settings;
   pomodoro: PomodoroState;
+  mood: Mood;
   currentTaskId: string | null;
   hydrated: boolean;
 
@@ -53,6 +56,9 @@ type Store = {
   addRoutine: (input: Omit<Routine, 'id' | 'streak' | 'lastCompletedDay' | 'createdAt'>) => string;
   toggleRoutineToday: (id: string) => void;
   removeRoutine: (id: string) => Promise<void>;
+
+  setEnergy: (value: EnergyLevel) => void;
+  clearEnergy: () => void;
 
   awardFocusSession: (durationSec: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
@@ -91,6 +97,11 @@ const initialSettings: Settings = {
   dailyReminderMinute: 0,
   aiDecompositionEnabled: false,
   theme: 'system',
+};
+
+const initialMood: Mood = {
+  energyDay: null,
+  energyValue: null,
 };
 
 const initialPomodoro: PomodoroState = {
@@ -157,6 +168,7 @@ export const useStore = create<Store>()(
       routines: [],
       notes: [],
       gamification: initialGamification,
+      mood: initialMood,
       settings: initialSettings,
       pomodoro: initialPomodoro,
       currentTaskId: null,
@@ -349,6 +361,12 @@ export const useStore = create<Store>()(
         set((s) => ({ routines: s.routines.filter((r) => r.id !== id) }));
       },
 
+      setEnergy: (value) =>
+        set({ mood: { energyDay: todayKey(), energyValue: value } }),
+
+      clearEnergy: () =>
+        set({ mood: { energyDay: null, energyValue: null } }),
+
       awardFocusSession: (durationSec) =>
         set((s) => {
           const minutes = Math.round(durationSec / 60);
@@ -492,6 +510,7 @@ export const useStore = create<Store>()(
           gamification: initialGamification,
           settings: initialSettings,
           pomodoro: initialPomodoro,
+          mood: initialMood,
           currentTaskId: null,
         }),
 
@@ -506,6 +525,7 @@ export const useStore = create<Store>()(
         notes: s.notes,
         gamification: s.gamification,
         settings: s.settings,
+        mood: s.mood,
         // Don't persist pomodoro live state — start fresh each app launch.
         currentTaskId: s.currentTaskId,
       }),

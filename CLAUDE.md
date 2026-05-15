@@ -44,11 +44,13 @@ src/
   components/
     AddTaskSheet.tsx             Modal création tâche (avec option décomposition IA)
     AddRoutineSheet.tsx          Modal création routine (jours + heure)
+    CrisisModal.tsx              Modal "Trop ?" : respiration 4-7-8 animée + ancrage 5-4-3-2-1
+    EnergyCheck.tsx              Bandeau du jour : 4 emojis, mémoire 1 valeur/jour
     NotesInbox.tsx               Carte "Vider la tête" (capture sans catégorisation)
     PomodoroTimer.tsx            Anneau SVG + contrôles, pure view qui lit le store
     TaskItem.tsx                 Carte tâche dépliable, sous-tâches éditables, badge "stale" 7j+
     RoutineItem.tsx              Ligne routine
-    StuckCard.tsx                Boutons "Juste 2 min" + "Choisis pour moi" (anti-friction TDAH)
+    StuckCard.tsx                Boutons "Juste 2 min" + "Choisis pour moi", adapté à l'énergie
     XPBar.tsx                    Barre XP + niveau
     ZenMode.tsx                  Modal plein écran toujours sombre
   screens/
@@ -82,7 +84,9 @@ const makeStyles = (c: ColorScheme) => StyleSheet.create({
 
 ### State
 
-Tout le state persistant et partagé est dans `src/store.ts`. Une seule store Zustand. Slices logiques : `tasks`, `routines`, `notes`, `gamification`, `settings`, `pomodoro`, `currentTaskId`. Le flag `hydrated` est non-persisté, juste pour l'écran splash.
+Tout le state persistant et partagé est dans `src/store.ts`. Une seule store Zustand. Slices logiques : `tasks`, `routines`, `notes`, `gamification`, `mood`, `settings`, `pomodoro`, `currentTaskId`. Le flag `hydrated` est non-persisté, juste pour l'écran splash.
+
+`mood` ne stocke qu'**une valeur par jour** (`{ energyDay, energyValue }`). Si `energyDay !== todayKey()`, l'UI considère qu'aucune valeur n'est définie pour aujourd'hui et affiche le sélecteur. Pas d'historique ni de courbe — c'est volontaire (voir `design.md`).
 
 Les **notes** sont l'inbox brain-dump : entrées texte libres sans catégorisation. Trois cycles de vie : actives → archivées (`archivedAt` non-null) → supprimées. `convertNoteToTask` crée une tâche réelle et archive la note d'origine pour garder la trace. Les notes archivées restent persistées (debug / undo manuel) mais sont filtrées de l'UI principale.
 
@@ -149,6 +153,14 @@ L'onglet "Faites" du `TasksScreen` rend une `SectionList` groupée par jour (hel
 ### Tâches "stale"
 
 Une tâche non-faite avec `createdAt` > 7 jours hérite d'un visuel discret (bordure pointillée `warning`, tag `{n}j`). Calcul en ligne dans `TaskItem`. Pas d'action automatique : juste un signal doux pour la rendre visible.
+
+### Mode crise (`CrisisModal`)
+
+Accessible via le bouton "Trop ?" en haut à droite de l'onglet Tâches. Modale plein écran fond `#11131F` (palette autonome, pas `useColors()`), animation respiration 4-7-8 pilotée par `Animated.Value` + `setTimeout` (pas un `Animated.loop` parce qu'on doit changer le label `Inspire/Retiens/Expire` entre les étapes). Le timer s'auto-arrête sur unmount/close via un flag `cancelled` capturé dans le useEffect. Aucun XP, aucune série, aucun side-effect dans le store — c'est un espace de pause, pas une "tâche".
+
+### Énergie quotidienne (`EnergyCheck` + `StuckCard`)
+
+Le `StuckCard` lit `mood` et passe en variante "low-energy" quand `energyValue <= 2`. Variante : message changé en "Énergie basse, on y va doucement", bouton "Choisis pour moi" déplacé en lien secondaire (moins d'agressivité). C'est le seul comportement adaptatif basé sur l'énergie pour l'instant — si tu en ajoutes (suggestions de tâches courtes, masquage routines lourdes, etc.), passe par le même check `energyDay === todayKey() && energyValue !== null`.
 
 ## Ce qui n'existe pas (encore)
 
