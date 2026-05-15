@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 import { pickWeightedRandomTask } from '../utils';
 
 type Props = {
@@ -9,6 +9,8 @@ type Props = {
 };
 
 export const StuckCard: React.FC<Props> = ({ onGoFocus }) => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const tasks = useStore((s) => s.tasks);
   const setCurrentTask = useStore((s) => s.setCurrentTask);
   const startQuickFocus = useStore((s) => s.startQuickFocus);
@@ -32,10 +34,7 @@ export const StuckCard: React.FC<Props> = ({ onGoFocus }) => {
             onGoFocus();
           },
         },
-        {
-          text: 'Garder en cours',
-          onPress: onGoFocus,
-        },
+        { text: 'Garder en cours', onPress: onGoFocus },
       ],
       { cancelable: true },
     );
@@ -63,32 +62,38 @@ export const StuckCard: React.FC<Props> = ({ onGoFocus }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  label: { ...type.tiny, color: colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
-  btnRow: { flexDirection: 'row', gap: spacing.sm },
-  btn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    gap: 2,
-  },
-  btnPrimary: { backgroundColor: colors.primary },
-  btnPrimaryText: { color: '#fff', ...type.body, fontWeight: '700' },
-  btnSecondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  btnSecondaryText: { color: colors.text, ...type.body, fontWeight: '700' },
-  btnSubLight: { ...type.tiny, color: 'rgba(255,255,255,0.75)' },
-  btnSubMuted: { ...type.tiny, color: colors.textMuted },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surfaceAlt,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    label: {
+      ...type.tiny,
+      color: c.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    btnRow: { flexDirection: 'row', gap: spacing.sm },
+    btn: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      gap: 2,
+    },
+    btnPrimary: { backgroundColor: c.primary },
+    btnPrimaryText: { color: '#fff', ...type.body, fontWeight: '700' },
+    btnSecondary: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    btnSecondaryText: { color: c.text, ...type.body, fontWeight: '700' },
+    btnSubLight: { ...type.tiny, color: 'rgba(255,255,255,0.75)' },
+    btnSubMuted: { ...type.tiny, color: c.textMuted },
+  });

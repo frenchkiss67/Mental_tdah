@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { decomposeWithAI } from '../services/ai';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 import type { Priority } from '../types';
 import { decomposeTask } from '../utils';
 
@@ -26,6 +26,8 @@ const priorities: { key: Priority; label: string }[] = [
 ];
 
 export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const addTaskWithSubtasks = useStore((s) => s.addTaskWithSubtasks);
   const settings = useStore((s) => s.settings);
   const [title, setTitle] = useState('');
@@ -76,7 +78,7 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
 
           <TextInput
             placeholder="Ex: Préparer le dossier d'inscription"
-            placeholderTextColor={colors.textFaint}
+            placeholderTextColor={c.textFaint}
             style={styles.input}
             value={title}
             onChangeText={setTitle}
@@ -86,7 +88,7 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
 
           <TextInput
             placeholder="Notes (optionnel)"
-            placeholderTextColor={colors.textFaint}
+            placeholderTextColor={c.textFaint}
             style={[styles.input, styles.multiline]}
             value={note}
             onChangeText={setNote}
@@ -131,50 +133,51 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  backdropTouch: { flex: 1 },
-  sheet: {
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    gap: spacing.md,
-  },
-  heading: { ...type.h1, color: colors.text },
-  hint: { ...type.small, color: colors.textMuted },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...type.body,
-    color: colors.text,
-  },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  label: { ...type.small, color: colors.textMuted },
-  priorityRow: { flexDirection: 'row', gap: spacing.sm },
-  pill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillText: { color: colors.textMuted, ...type.small },
-  pillTextActive: { color: '#fff' },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  submitDisabled: { backgroundColor: colors.primarySoft, opacity: 0.6 },
-  submitText: { color: '#fff', ...type.body, fontWeight: '700' },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+    backdropTouch: { flex: 1 },
+    sheet: {
+      backgroundColor: c.bg,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      gap: spacing.md,
+    },
+    heading: { ...type.h1, color: c.text },
+    hint: { ...type.small, color: c.textMuted },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...type.body,
+      color: c.text,
+    },
+    multiline: { minHeight: 80, textAlignVertical: 'top' },
+    label: { ...type.small, color: c.textMuted },
+    priorityRow: { flexDirection: 'row', gap: spacing.sm },
+    pill: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    pillActive: { backgroundColor: c.primary, borderColor: c.primary },
+    pillText: { color: c.textMuted, ...type.small },
+    pillTextActive: { color: '#fff' },
+    submit: {
+      backgroundColor: c.primary,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    submitDisabled: { backgroundColor: c.primarySoft, opacity: 0.6 },
+    submitText: { color: '#fff', ...type.body, fontWeight: '700' },
+  });

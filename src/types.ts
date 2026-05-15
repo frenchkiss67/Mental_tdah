@@ -55,6 +55,8 @@ export type Routine = {
   notificationId?: string;
 };
 
+export type ThemePref = 'system' | 'light' | 'dark';
+
 export type Settings = {
   focusMinutes: number;
   breakMinutes: number;
@@ -68,4 +70,5 @@ export type Settings = {
   dailyReminderId?: string;
   aiDecompositionEnabled: boolean;
   anthropicApiKey?: string;
+  theme: ThemePref;
 };

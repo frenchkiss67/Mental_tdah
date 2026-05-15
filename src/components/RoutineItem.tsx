@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 import type { Routine } from '../types';
 import { todayKey } from '../utils';
 
@@ -10,6 +10,8 @@ const DAYS_ABBR = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 type Props = { routine: Routine };
 
 export const RoutineItem: React.FC<Props> = ({ routine }) => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const toggle = useStore((s) => s.toggleRoutineToday);
   const remove = useStore((s) => s.removeRoutine);
   const isToday = routine.lastCompletedDay === todayKey();
@@ -37,12 +39,8 @@ export const RoutineItem: React.FC<Props> = ({ routine }) => {
           </Text>
           <View style={styles.metaRow}>
             <Text style={styles.meta}>{dayLabel}</Text>
-            {routine.scheduledTime && (
-              <Text style={styles.meta}> · {routine.scheduledTime}</Text>
-            )}
-            {routine.streak > 1 && (
-              <Text style={styles.streak}> · {routine.streak}j</Text>
-            )}
+            {routine.scheduledTime && <Text style={styles.meta}> · {routine.scheduledTime}</Text>}
+            {routine.streak > 1 && <Text style={styles.streak}> · {routine.streak}j</Text>}
           </View>
         </View>
       </Pressable>
@@ -53,37 +51,44 @@ export const RoutineItem: React.FC<Props> = ({ routine }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  cardDone: { backgroundColor: colors.surfaceAlt, borderColor: colors.primarySoft },
-  row: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: spacing.md, paddingVertical: spacing.sm },
-  check: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkDone: { backgroundColor: colors.accent, borderColor: colors.accent },
-  checkMark: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  body: { flex: 1 },
-  title: { ...type.body, color: colors.text },
-  titleDone: { color: colors.textMuted },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  meta: { ...type.small, color: colors.textMuted },
-  streak: { ...type.small, color: colors.accent, fontWeight: '700' },
-  delete: { fontSize: 22, color: colors.textFaint, paddingHorizontal: spacing.sm },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    cardDone: { backgroundColor: c.surfaceAlt, borderColor: c.primarySoft },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    check: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: c.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkDone: { backgroundColor: c.accent, borderColor: c.accent },
+    checkMark: { color: '#fff', fontWeight: '800', fontSize: 14 },
+    body: { flex: 1 },
+    title: { ...type.body, color: c.text },
+    titleDone: { color: c.textMuted },
+    metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    meta: { ...type.small, color: c.textMuted },
+    streak: { ...type.small, color: c.accent, fontWeight: '700' },
+    delete: { fontSize: 22, color: c.textFaint, paddingHorizontal: spacing.sm },
+  });

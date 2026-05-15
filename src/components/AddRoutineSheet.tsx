@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { scheduleRoutineReminder } from '../services/notifications';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 
 type Props = { visible: boolean; onClose: () => void };
 
@@ -28,6 +28,8 @@ const DAYS = [
 const TIME_PRESETS = ['07:00', '08:00', '12:00', '18:00', '21:00'];
 
 export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const addRoutine = useStore((s) => s.addRoutine);
   const settings = useStore((s) => s.settings);
   const [title, setTitle] = useState('');
@@ -78,7 +80,7 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
           <View style={styles.titleRow}>
             <TextInput
               placeholder="🌟"
-              placeholderTextColor={colors.textFaint}
+              placeholderTextColor={c.textFaint}
               style={styles.emoji}
               value={emoji}
               onChangeText={(v) => setEmoji(v.slice(0, 2))}
@@ -86,7 +88,7 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
             />
             <TextInput
               placeholder="Ex: Médication, sport, méditation"
-              placeholderTextColor={colors.textFaint}
+              placeholderTextColor={c.textFaint}
               style={[styles.input, { flex: 1 }]}
               value={title}
               onChangeText={setTitle}
@@ -120,9 +122,7 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
               onPress={() => setTime(null)}
               style={[styles.timePill, time === null && styles.timePillActive]}
             >
-              <Text style={[styles.timeText, time === null && styles.timeTextActive]}>
-                Aucun
-              </Text>
+              <Text style={[styles.timeText, time === null && styles.timeTextActive]}>Aucun</Text>
             </Pressable>
             {TIME_PRESETS.map((t) => (
               <Pressable
@@ -130,9 +130,7 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
                 onPress={() => setTime(t)}
                 style={[styles.timePill, time === t && styles.timePillActive]}
               >
-                <Text style={[styles.timeText, time === t && styles.timeTextActive]}>
-                  {t}
-                </Text>
+                <Text style={[styles.timeText, time === t && styles.timeTextActive]}>{t}</Text>
               </Pressable>
             ))}
           </View>
@@ -153,73 +151,74 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  backdropTouch: { flex: 1 },
-  sheet: {
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    gap: spacing.md,
-  },
-  heading: { ...type.h1, color: colors.text },
-  hint: { ...type.small, color: colors.textMuted },
-  titleRow: { flexDirection: 'row', gap: spacing.sm },
-  emoji: {
-    width: 60,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    textAlign: 'center',
-    fontSize: 22,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...type.body,
-    color: colors.text,
-  },
-  label: { ...type.small, color: colors.textMuted },
-  row: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
-  dayPill: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayPillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dayPillText: { ...type.small, color: colors.textMuted, fontWeight: '700' },
-  dayPillTextActive: { color: '#fff' },
-  timePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timePillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  timeText: { ...type.small, color: colors.textMuted },
-  timeTextActive: { color: '#fff' },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  submitDisabled: { backgroundColor: colors.primarySoft, opacity: 0.6 },
-  submitText: { color: '#fff', ...type.body, fontWeight: '700' },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+    backdropTouch: { flex: 1 },
+    sheet: {
+      backgroundColor: c.bg,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      gap: spacing.md,
+    },
+    heading: { ...type.h1, color: c.text },
+    hint: { ...type.small, color: c.textMuted },
+    titleRow: { flexDirection: 'row', gap: spacing.sm },
+    emoji: {
+      width: 60,
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      textAlign: 'center',
+      fontSize: 22,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...type.body,
+      color: c.text,
+    },
+    label: { ...type.small, color: c.textMuted },
+    row: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+    dayPill: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayPillActive: { backgroundColor: c.primary, borderColor: c.primary },
+    dayPillText: { ...type.small, color: c.textMuted, fontWeight: '700' },
+    dayPillTextActive: { color: '#fff' },
+    timePill: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    timePillActive: { backgroundColor: c.primary, borderColor: c.primary },
+    timeText: { ...type.small, color: c.textMuted },
+    timeTextActive: { color: '#fff' },
+    submit: {
+      backgroundColor: c.primary,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    submitDisabled: { backgroundColor: c.primarySoft, opacity: 0.6 },
+    submitText: { color: '#fff', ...type.body, fontWeight: '700' },
+  });

@@ -80,6 +80,7 @@ const initialSettings: Settings = {
   dailyReminderHour: 9,
   dailyReminderMinute: 0,
   aiDecompositionEnabled: false,
+  theme: 'system',
 };
 
 const initialPomodoro: PomodoroState = {

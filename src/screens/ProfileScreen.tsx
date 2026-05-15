@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -13,20 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { XPBar } from '../components/XPBar';
 import { ensurePermissions } from '../services/notifications';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
-import { JOKER_CAP } from '../types';
-
-const StatCard: React.FC<{ label: string; value: string | number; hint?: string }> = ({
-  label,
-  value,
-  hint,
-}) => (
-  <View style={styles.stat}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-    {hint && <Text style={styles.statHint}>{hint}</Text>}
-  </View>
-);
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
+import { JOKER_CAP, type ThemePref } from '../types';
 
 const REMINDER_PRESETS = [
   { h: 8, m: 0, label: '08:00' },
@@ -35,7 +23,28 @@ const REMINDER_PRESETS = [
   { h: 19, m: 0, label: '19:00' },
 ];
 
+const THEMES: { key: ThemePref; label: string }[] = [
+  { key: 'system', label: 'Système' },
+  { key: 'light', label: 'Clair' },
+  { key: 'dark', label: 'Sombre' },
+];
+
+const StatCard: React.FC<{
+  label: string;
+  value: string | number;
+  hint?: string;
+  styles: ReturnType<typeof makeStyles>;
+}> = ({ label, value, hint, styles }) => (
+  <View style={styles.stat}>
+    <Text style={styles.statValue}>{value}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+    {hint && <Text style={styles.statHint}>{hint}</Text>}
+  </View>
+);
+
 export const ProfileScreen: React.FC = () => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const gamification = useStore((s) => s.gamification);
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
@@ -95,10 +104,7 @@ export const ProfileScreen: React.FC = () => {
   const saveApiKey = () => {
     const k = apiKeyInput.trim();
     updateSettings({ anthropicApiKey: k || undefined });
-    Alert.alert(
-      'Enregistré',
-      k ? 'Clé stockée localement.' : 'Clé supprimée.',
-    );
+    Alert.alert('Enregistré', k ? 'Clé stockée localement.' : 'Clé supprimée.');
   };
 
   return (
@@ -117,17 +123,14 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.jokerHint}>
                 {gamification.jokerUsedToday
                   ? 'Joker utilisé : ta série continue.'
-                  : `Pardonne un jour manqué. +1 tous les 7 jours.`}
+                  : 'Pardonne un jour manqué. +1 tous les 7 jours.'}
               </Text>
             </View>
             <View style={styles.jokerPips}>
               {Array.from({ length: JOKER_CAP }).map((_, i) => (
                 <View
                   key={i}
-                  style={[
-                    styles.jokerPip,
-                    i < gamification.jokers && styles.jokerPipActive,
-                  ]}
+                  style={[styles.jokerPip, i < gamification.jokers && styles.jokerPipActive]}
                 />
               ))}
             </View>
@@ -135,13 +138,46 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
         <View style={styles.statsRow}>
-          <StatCard label="Série" value={`${gamification.streak}j`} hint="jours consécutifs" />
-          <StatCard label="Tâches" value={gamification.totalTasksDone} hint="terminées" />
           <StatCard
+            styles={styles}
+            label="Série"
+            value={`${gamification.streak}j`}
+            hint="jours consécutifs"
+          />
+          <StatCard
+            styles={styles}
+            label="Tâches"
+            value={gamification.totalTasksDone}
+            hint="terminées"
+          />
+          <StatCard
+            styles={styles}
             label="Focus"
             value={`${gamification.totalFocusMinutes}m`}
             hint="cumulés"
           />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Apparence</Text>
+          <View style={styles.themeRow}>
+            {THEMES.map((t) => (
+              <Pressable
+                key={t.key}
+                onPress={() => updateSettings({ theme: t.key })}
+                style={[styles.themePill, settings.theme === t.key && styles.themePillActive]}
+              >
+                <Text
+                  style={[
+                    styles.themeText,
+                    settings.theme === t.key && styles.themeTextActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -152,7 +188,7 @@ export const ProfileScreen: React.FC = () => {
             <Switch
               value={settings.notificationsEnabled}
               onValueChange={onToggleNotifications}
-              trackColor={{ true: colors.primary, false: colors.surfaceAlt }}
+              trackColor={{ true: c.primary, false: c.surfaceAlt }}
             />
           </View>
 
@@ -171,7 +207,7 @@ export const ProfileScreen: React.FC = () => {
               value={settings.dailyReminderEnabled}
               onValueChange={onToggleDailyReminder}
               disabled={!settings.notificationsEnabled}
-              trackColor={{ true: colors.primary, false: colors.surfaceAlt }}
+              trackColor={{ true: c.primary, false: c.surfaceAlt }}
             />
           </View>
 
@@ -209,7 +245,7 @@ export const ProfileScreen: React.FC = () => {
             <Switch
               value={settings.aiDecompositionEnabled}
               onValueChange={onToggleAi}
-              trackColor={{ true: colors.primary, false: colors.surfaceAlt }}
+              trackColor={{ true: c.primary, false: c.surfaceAlt }}
             />
           </View>
 
@@ -222,7 +258,7 @@ export const ProfileScreen: React.FC = () => {
               value={apiKeyInput}
               onChangeText={setApiKeyInput}
               placeholder="sk-ant-..."
-              placeholderTextColor={colors.textFaint}
+              placeholderTextColor={c.textFaint}
               autoCapitalize="none"
               autoCorrect={false}
               secureTextEntry={!showKey}
@@ -244,7 +280,7 @@ export const ProfileScreen: React.FC = () => {
             <Switch
               value={settings.hapticsEnabled}
               onValueChange={(v) => updateSettings({ hapticsEnabled: v })}
-              trackColor={{ true: colors.primary, false: colors.surfaceAlt }}
+              trackColor={{ true: c.primary, false: c.surfaceAlt }}
             />
           </View>
 
@@ -258,9 +294,7 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.stepper}>
               <Pressable
                 onPress={() =>
-                  updateSettings({
-                    breakMinutes: Math.max(1, settings.breakMinutes - 1),
-                  })
+                  updateSettings({ breakMinutes: Math.max(1, settings.breakMinutes - 1) })
                 }
                 style={styles.stepBtn}
               >
@@ -268,9 +302,7 @@ export const ProfileScreen: React.FC = () => {
               </Pressable>
               <Pressable
                 onPress={() =>
-                  updateSettings({
-                    breakMinutes: Math.min(30, settings.breakMinutes + 1),
-                  })
+                  updateSettings({ breakMinutes: Math.min(30, settings.breakMinutes + 1) })
                 }
                 style={styles.stepBtn}
               >
@@ -323,116 +355,128 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 80 },
-  heading: { ...type.h1, color: colors.text },
-  sub: { ...type.small, color: colors.textMuted, marginTop: -spacing.xs },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-  },
-  jokerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  jokerLabelWrap: { flex: 1, gap: 2 },
-  jokerLabel: { ...type.small, color: colors.text, fontWeight: '700' },
-  jokerHint: { ...type.tiny, color: colors.textMuted },
-  jokerPips: { flexDirection: 'row', gap: spacing.xs },
-  jokerPip: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  jokerPipActive: { backgroundColor: colors.warning, borderColor: colors.warning },
-  statsRow: { flexDirection: 'row', gap: spacing.sm },
-  stat: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'flex-start',
-    gap: 2,
-  },
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.text },
-  statLabel: { ...type.small, color: colors.text },
-  statHint: { ...type.tiny, color: colors.textMuted, textTransform: 'uppercase' },
-  sectionTitle: { ...type.h2, color: colors.text },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowLabel: { ...type.body, color: colors.text },
-  rowSub: { ...type.small, color: colors.textMuted, marginTop: 2 },
-  divider: { height: 1, backgroundColor: colors.border },
-  timeRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
-  timePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  timePillActive: { backgroundColor: colors.primary },
-  timeText: { ...type.small, color: colors.textMuted },
-  timeTextActive: { color: '#fff', fontWeight: '700' },
-  keyRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  keyInput: {
-    flex: 1,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    ...type.small,
-    color: colors.text,
-  },
-  keyToggle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
-  },
-  keyToggleText: { ...type.small, color: colors.text, fontWeight: '700' },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  saveBtnText: { color: '#fff', ...type.small, fontWeight: '700' },
-  stepper: { flexDirection: 'row', gap: spacing.sm },
-  stepBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepText: { ...type.h2, color: colors.text },
-  danger: {
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  dangerText: { color: colors.danger, ...type.body, fontWeight: '700' },
-  footer: {
-    textAlign: 'center',
-    color: colors.textFaint,
-    ...type.small,
-    marginTop: spacing.lg,
-  },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 80 },
+    heading: { ...type.h1, color: c.text },
+    sub: { ...type.small, color: c.textMuted, marginTop: -spacing.xs },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.md,
+    },
+    jokerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    jokerLabelWrap: { flex: 1, gap: 2 },
+    jokerLabel: { ...type.small, color: c.text, fontWeight: '700' },
+    jokerHint: { ...type.tiny, color: c.textMuted },
+    jokerPips: { flexDirection: 'row', gap: spacing.xs },
+    jokerPip: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 2,
+      borderColor: c.border,
+    },
+    jokerPipActive: { backgroundColor: c.warning, borderColor: c.warning },
+    statsRow: { flexDirection: 'row', gap: spacing.sm },
+    stat: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'flex-start',
+      gap: 2,
+    },
+    statValue: { fontSize: 22, fontWeight: '800', color: c.text },
+    statLabel: { ...type.small, color: c.text },
+    statHint: { ...type.tiny, color: c.textMuted, textTransform: 'uppercase' },
+    sectionTitle: { ...type.h2, color: c.text },
+    themeRow: { flexDirection: 'row', gap: spacing.sm },
+    themePill: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+    },
+    themePillActive: { backgroundColor: c.primary },
+    themeText: { ...type.small, color: c.textMuted, fontWeight: '700' },
+    themeTextActive: { color: '#fff' },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    rowLabel: { ...type.body, color: c.text },
+    rowSub: { ...type.small, color: c.textMuted, marginTop: 2 },
+    divider: { height: 1, backgroundColor: c.border },
+    timeRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+    timePill: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: c.surfaceAlt,
+    },
+    timePillActive: { backgroundColor: c.primary },
+    timeText: { ...type.small, color: c.textMuted },
+    timeTextActive: { color: '#fff', fontWeight: '700' },
+    keyRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+    keyInput: {
+      flex: 1,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      ...type.small,
+      color: c.text,
+    },
+    keyToggle: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceAlt,
+    },
+    keyToggleText: { ...type.small, color: c.text, fontWeight: '700' },
+    saveBtn: {
+      backgroundColor: c.primary,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      alignItems: 'center',
+    },
+    saveBtnText: { color: '#fff', ...type.small, fontWeight: '700' },
+    stepper: { flexDirection: 'row', gap: spacing.sm },
+    stepBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepText: { ...type.h2, color: c.text },
+    danger: {
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.danger,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    dangerText: { color: c.danger, ...type.body, fontWeight: '700' },
+    footer: {
+      textAlign: 'center',
+      color: c.textFaint,
+      ...type.small,
+      marginTop: spacing.lg,
+    },
+  });

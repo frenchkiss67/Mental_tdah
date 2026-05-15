@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 import { formatTime } from '../utils';
 
 type Props = {
@@ -15,6 +15,8 @@ type Props = {
 
 export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, onZenPress }) => {
   useKeepAwake();
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const pomodoro = useStore((s) => s.pomodoro);
   const hapticsEnabled = useStore((s) => s.settings.hapticsEnabled);
   const togglePomodoro = useStore((s) => s.togglePomodoro);
@@ -67,7 +69,7 @@ export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, on
           : 'Grande pause';
 
   const primaryColor =
-    pomodoro.phase === 'focus' || pomodoro.phase === 'idle' ? colors.primary : colors.accent;
+    pomodoro.phase === 'focus' || pomodoro.phase === 'idle' ? c.primary : c.accent;
 
   const primaryLabel =
     pomodoro.phase === 'idle' ? 'Démarrer' : pomodoro.running ? 'Pause' : 'Reprendre';
@@ -77,9 +79,7 @@ export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, on
   return (
     <View style={styles.wrap}>
       <View style={styles.phaseRow}>
-        <Text style={[styles.phaseLabel, compact && styles.phaseLabelLight]}>
-          {phaseLabel}
-        </Text>
+        <Text style={[styles.phaseLabel, compact && styles.phaseLabelLight]}>{phaseLabel}</Text>
         {onZenPress && (
           <Pressable onPress={onZenPress} hitSlop={8} style={styles.zenBtn}>
             <Text style={styles.zenBtnText}>Mode zen</Text>
@@ -92,7 +92,7 @@ export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, on
             cx={size / 2}
             cy={size / 2}
             r={R}
-            stroke={compact ? 'rgba(255,255,255,0.12)' : colors.surfaceAlt}
+            stroke={compact ? 'rgba(255,255,255,0.12)' : c.surfaceAlt}
             strokeWidth={STROKE}
             fill="none"
           />
@@ -110,9 +110,7 @@ export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, on
           />
         </Svg>
         <View style={styles.ringCenter} pointerEvents="none">
-          <Text style={[styles.time, compact && styles.timeBig]}>
-            {formatTime(remainingSec)}
-          </Text>
+          <Text style={[styles.time, compact && styles.timeBig]}>{formatTime(remainingSec)}</Text>
           <Text style={[styles.cycle, compact && styles.cycleLight]}>Cycle {cycleDisplay}</Text>
         </View>
       </View>
@@ -142,39 +140,40 @@ export const PomodoroTimer: React.FC<Props> = ({ size = 240, compact = false, on
   );
 };
 
-const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: spacing.lg },
-  phaseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  phaseLabel: { ...type.h2, color: colors.textMuted },
-  phaseLabelLight: { color: 'rgba(255,255,255,0.7)' },
-  zenBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  zenBtnText: { ...type.tiny, color: colors.primary, fontWeight: '700' },
-  ringWrap: { alignItems: 'center', justifyContent: 'center' },
-  ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  time: { fontSize: 48, fontWeight: '800', color: colors.text },
-  timeBig: { fontSize: 64, color: '#fff' },
-  cycle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-  cycleLight: { color: 'rgba(255,255,255,0.6)' },
-  controls: { flexDirection: 'row', gap: spacing.md },
-  btn: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radius.pill,
-    minWidth: 140,
-    alignItems: 'center',
-  },
-  btnSecondary: { backgroundColor: colors.surfaceAlt },
-  btnSecondaryDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  btnText: { color: '#fff', ...type.body, fontWeight: '700' },
-  btnTextSecondary: { color: colors.textMuted, ...type.body, fontWeight: '700' },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    wrap: { alignItems: 'center', gap: spacing.lg },
+    phaseRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    phaseLabel: { ...type.h2, color: c.textMuted },
+    phaseLabelLight: { color: 'rgba(255,255,255,0.7)' },
+    zenBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
+      backgroundColor: c.surfaceAlt,
+    },
+    zenBtnText: { ...type.tiny, color: c.primary, fontWeight: '700' },
+    ringWrap: { alignItems: 'center', justifyContent: 'center' },
+    ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    time: { fontSize: 48, fontWeight: '800', color: c.text },
+    timeBig: { fontSize: 64, color: '#fff' },
+    cycle: { ...type.small, color: c.textMuted, marginTop: spacing.xs },
+    cycleLight: { color: 'rgba(255,255,255,0.6)' },
+    controls: { flexDirection: 'row', gap: spacing.md },
+    btn: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: radius.pill,
+      minWidth: 140,
+      alignItems: 'center',
+    },
+    btnSecondary: { backgroundColor: c.surfaceAlt },
+    btnSecondaryDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
+    btnText: { color: '#fff', ...type.body, fontWeight: '700' },
+    btnTextSecondary: { color: c.textMuted, ...type.body, fontWeight: '700' },
+  });

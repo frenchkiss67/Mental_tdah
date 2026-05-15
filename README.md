@@ -16,7 +16,11 @@ Assistant quotidien mobile pensé pour les cerveaux TDAH. Tâches, micro-étapes
 - **Routines** : habitudes récurrentes (jours de la semaine, heure de rappel optionnelle), série par routine, reset visuel quotidien.
 - **Focus** : timer Pomodoro avec cycles courts (préset 10/15/25/45 min), petites/grandes pauses configurables, vibrations en transition, **mode zen** plein écran sombre pour réduire la surcharge visuelle. State centralisé : pause/reprise/reset cohérents entre vues.
 - **Notifications locales** : alerte fin de session Pomodoro (même app fermée), rappel quotidien configurable, rappels par routine.
-- **Gamification** : XP par tâche (+10), par routine (+5), par session focus (+25 + minutes), niveaux progressifs, série de jours consécutifs, stats cumulées.
+- **Anti-friction TDAH** : carte "Bloqué·e ?" sur l'onglet Tâches avec deux raccourcis :
+  - **Juste 2 min** : démarre un mini-focus de 120 s sans engagement, sans toucher aux réglages.
+  - **Choisis pour moi** : tire au sort une tâche en cours pondérée par priorité, lève la paralysie décisionnelle.
+- **Gamification compassionnelle** : XP par tâche (+10), par routine (+5), par session focus (+25 + minutes), niveaux progressifs. Série de jours consécutifs avec système de **jokers** : 1 joker absorbe un jour manqué (cap 3, +1 tous les 7 jours).
+- **Thèmes** : clair / sombre / suivi du système, choisi dans le profil.
 - **Persistance locale** : tout est sauvegardé dans AsyncStorage, fonctionne offline.
 
 ## Démarrer

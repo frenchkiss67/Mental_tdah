@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddRoutineSheet } from '../components/AddRoutineSheet';
 import { RoutineItem } from '../components/RoutineItem';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { type ColorScheme, radius, spacing, type, useColors } from '../theme';
 import type { Routine } from '../types';
 import { todayKey } from '../utils';
 
 export const RoutinesScreen: React.FC = () => {
+  const c = useColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const routines = useStore((s) => s.routines);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -62,30 +64,31 @@ export const RoutinesScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md },
-  heading: { ...type.h1, color: colors.text },
-  sub: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 120 },
-  empty: { padding: spacing.xl, alignItems: 'center', gap: spacing.sm },
-  emptyTitle: { ...type.h2, color: colors.text, textAlign: 'center' },
-  emptySub: { ...type.small, color: colors.textMuted, textAlign: 'center' },
-  fab: {
-    position: 'absolute',
-    bottom: spacing.xl,
-    right: spacing.lg,
-    backgroundColor: colors.primary,
-    width: 60,
-    height: 60,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.35,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  fabText: { color: '#fff', fontSize: 32, fontWeight: '700', marginTop: -2 },
-});
+const makeStyles = (c: ColorScheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md },
+    heading: { ...type.h1, color: c.text },
+    sub: { ...type.small, color: c.textMuted, marginTop: spacing.xs },
+    list: { paddingHorizontal: spacing.lg, paddingBottom: 120 },
+    empty: { padding: spacing.xl, alignItems: 'center', gap: spacing.sm },
+    emptyTitle: { ...type.h2, color: c.text, textAlign: 'center' },
+    emptySub: { ...type.small, color: c.textMuted, textAlign: 'center' },
+    fab: {
+      position: 'absolute',
+      bottom: spacing.xl,
+      right: spacing.lg,
+      backgroundColor: c.primary,
+      width: 60,
+      height: 60,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: c.primary,
+      shadowOpacity: 0.35,
+      shadowOffset: { width: 0, height: 6 },
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    fabText: { color: '#fff', fontSize: 32, fontWeight: '700', marginTop: -2 },
+  });

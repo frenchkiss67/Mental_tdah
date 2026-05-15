@@ -3,10 +3,14 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from '../store';
-import { colors, radius, spacing, type } from '../theme';
+import { radius, spacing, type } from '../theme';
 import { PomodoroTimer } from './PomodoroTimer';
 
 type Props = { visible: boolean; onClose: () => void };
+
+// Zen mode is intentionally always dark, regardless of theme preference.
+const ZEN_BG = '#1B1830';
+const ZEN_ACCENT = '#A29BFE';
 
 export const ZenMode: React.FC<Props> = ({ visible, onClose }) => {
   const currentTaskId = useStore((s) => s.currentTaskId);
@@ -42,7 +46,7 @@ export const ZenMode: React.FC<Props> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#1B1830' },
+  safe: { flex: 1, backgroundColor: ZEN_BG },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -56,9 +60,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   closeText: { color: '#fff', ...type.small, fontWeight: '700' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xl, paddingHorizontal: spacing.lg },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
   taskWrap: { alignItems: 'center', gap: spacing.xs, maxWidth: '90%' },
-  taskLabel: { ...type.tiny, color: colors.primarySoft, textTransform: 'uppercase', letterSpacing: 2 },
+  taskLabel: {
+    ...type.tiny,
+    color: ZEN_ACCENT,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
   taskTitle: { ...type.h1, color: '#fff', textAlign: 'center' },
   footer: { padding: spacing.lg, alignItems: 'center' },
   footerText: { color: 'rgba(255,255,255,0.5)', ...type.small },
