@@ -50,7 +50,7 @@ src/
     EnergyCheck.tsx              Bandeau du jour : 4 emojis, mémoire 1 valeur/jour
     NotesInbox.tsx               Carte "Vider la tête" (capture sans catégorisation)
     PomodoroTimer.tsx            Anneau SVG + contrôles, pure view qui lit le store
-    TaskItem.tsx                 Carte tâche dépliable, sous-tâches éditables, badge "stale" 7j+
+    TaskItem.tsx                 Carte tâche dépliable, sous-tâches éditables + chip estimation temps, badge "stale" 7j+
     RoutineItem.tsx              Ligne routine
     SoundscapePicker.tsx         4 ambiances + Aucune + cycle volume (doux/moyen/fort)
     StuckCard.tsx                Boutons "Juste 2 min" + "Choisis pour moi", adapté à l'énergie
@@ -156,6 +156,10 @@ L'onglet "Faites" du `TasksScreen` rend une `SectionList` groupée par jour (hel
 ### Tâches "stale"
 
 Une tâche non-faite avec `createdAt` > 7 jours hérite d'un visuel discret (bordure pointillée `warning`, tag `{n}j`). Calcul en ligne dans `TaskItem`. Pas d'action automatique : juste un signal doux pour la rendre visible.
+
+### Estimation de temps
+
+`Subtask.estimatedMinutes` est optionnel (undefined = pas d'estimation). Édition via chip qui cycle `—` / `2` / `5` / `10` / `15` / `30` (presets dans `TaskItem.ESTIMATE_PRESETS`). Le total sur la carte affiche le restant si la tâche n'est pas terminée (somme des sous-tâches non-cochées), le total complet sinon. Pas de comparaison "estimé vs réel" — c'est volontaire (voir `design.md`).
 
 ### Mode crise (`CrisisModal`)
 

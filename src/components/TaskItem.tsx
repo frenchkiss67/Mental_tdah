@@ -12,6 +12,22 @@ type Props = {
 const priorityColor = (p: Task['priority'], c: ColorScheme) =>
   p === 'high' ? c.danger : p === 'low' ? c.textFaint : c.primarySoft;
 
+// Cycle through none → 2 → 5 → 10 → 15 → 30 → none.
+const ESTIMATE_PRESETS: (number | null)[] = [null, 2, 5, 10, 15, 30];
+
+const nextEstimate = (current: number | undefined): number | null => {
+  const idx = ESTIMATE_PRESETS.findIndex((v) => v === (current ?? null));
+  const next = ESTIMATE_PRESETS[(idx + 1) % ESTIMATE_PRESETS.length];
+  return next;
+};
+
+const formatTotal = (min: number): string => {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
+};
+
 export const TaskItem: React.FC<Props> = ({ task, onStartFocus }) => {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -21,12 +37,22 @@ export const TaskItem: React.FC<Props> = ({ task, onStartFocus }) => {
   const toggleSubtask = useStore((s) => s.toggleSubtask);
   const addSubtask = useStore((s) => s.addSubtask);
   const removeSubtask = useStore((s) => s.removeSubtask);
+  const setSubtaskEstimate = useStore((s) => s.setSubtaskEstimate);
   const removeTask = useStore((s) => s.removeTask);
 
   const doneCount = task.subtasks.filter((s) => s.done).length;
   const progress = task.subtasks.length
     ? `${doneCount}/${task.subtasks.length}`
     : null;
+
+  const totalEstimate = task.subtasks.reduce(
+    (acc, s) => acc + (s.estimatedMinutes ?? 0),
+    0,
+  );
+  const remainingEstimate = task.subtasks.reduce(
+    (acc, s) => acc + (s.done ? 0 : s.estimatedMinutes ?? 0),
+    0,
+  );
 
   const ageDays = Math.floor((Date.now() - task.createdAt) / 86400000);
   const stale = !task.done && ageDays >= 7;
@@ -66,6 +92,13 @@ export const TaskItem: React.FC<Props> = ({ task, onStartFocus }) => {
                   : 'Priorité normale'}
             </Text>
             {progress && <Text style={styles.meta}> · {progress} étapes</Text>}
+            {totalEstimate > 0 && (
+              <Text style={styles.meta}>
+                {' · ~'}
+                {task.done ? formatTotal(totalEstimate) : formatTotal(remainingEstimate)}
+                {!task.done && remainingEstimate !== totalEstimate ? ' restantes' : ''}
+              </Text>
+            )}
             {stale && <Text style={styles.staleTag}> · {ageDays}j</Text>}
           </View>
         </Pressable>
@@ -85,6 +118,25 @@ export const TaskItem: React.FC<Props> = ({ task, onStartFocus }) => {
                   {s.done && <Text style={styles.subCheckMark}>✓</Text>}
                 </View>
                 <Text style={[styles.subTitle, s.done && styles.titleDone]}>{s.title}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  setSubtaskEstimate(task.id, s.id, nextEstimate(s.estimatedMinutes))
+                }
+                hitSlop={6}
+                style={[
+                  styles.estimateChip,
+                  s.estimatedMinutes != null && styles.estimateChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.estimateChipText,
+                    s.estimatedMinutes != null && styles.estimateChipTextActive,
+                  ]}
+                >
+                  {s.estimatedMinutes != null ? `${s.estimatedMinutes} min` : '+ temps ?'}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={() => removeSubtask(task.id, s.id)}
@@ -185,6 +237,15 @@ const makeStyles = (c: ColorScheme) =>
     subCheckDone: { backgroundColor: c.accent, borderColor: c.accent },
     subCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
     subTitle: { ...type.small, color: c.text, flex: 1 },
+    estimateChip: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      backgroundColor: c.surfaceAlt,
+    },
+    estimateChipActive: { backgroundColor: c.primarySoft },
+    estimateChipText: { ...type.tiny, color: c.textMuted, fontWeight: '700' },
+    estimateChipTextActive: { color: '#fff' },
     subRemove: { paddingHorizontal: spacing.xs },
     subRemoveText: { fontSize: 18, color: c.textFaint, lineHeight: 18 },
     addRow: {

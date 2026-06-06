@@ -48,6 +48,7 @@ type Store = {
   toggleSubtask: (taskId: string, subId: string) => void;
   addSubtask: (taskId: string, title: string) => void;
   removeSubtask: (taskId: string, subId: string) => void;
+  setSubtaskEstimate: (taskId: string, subId: string, minutes: number | null) => void;
   setCurrentTask: (id: string | null) => void;
 
   addNote: (text: string) => string;
@@ -279,6 +280,25 @@ export const useStore = create<Store>()(
             t.id !== taskId
               ? t
               : { ...t, subtasks: t.subtasks.filter((sub) => sub.id !== subId) },
+          ),
+        })),
+
+      setSubtaskEstimate: (taskId, subId, minutes) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id !== taskId
+              ? t
+              : {
+                  ...t,
+                  subtasks: t.subtasks.map((sub) =>
+                    sub.id !== subId
+                      ? sub
+                      : {
+                          ...sub,
+                          estimatedMinutes: minutes === null ? undefined : minutes,
+                        },
+                  ),
+                },
           ),
         })),
 

@@ -2,6 +2,7 @@ export type Subtask = {
   id: string;
   title: string;
   done: boolean;
+  estimatedMinutes?: number;
 };
 
 export type Priority = 'low' | 'normal' | 'high';
