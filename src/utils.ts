@@ -1,4 +1,5 @@
-import type { Subtask } from './types';
+import type { GamificationState, Subtask } from './types';
+import { JOKER_CAP } from './types';
 
 export const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -158,6 +159,51 @@ export const decomposeTask = (title: string, note?: string): Subtask[] => {
     title: p.charAt(0).toUpperCase() + p.slice(1),
     done: false,
   }));
+};
+
+// Streak + joker accounting. Idempotent on same day. Auto-consumes jokers
+// when the user missed days but had jokers left; otherwise resets to 1.
+// Earns +1 joker every 7 consecutive days (cap = JOKER_CAP). Pure so it
+// can be unit-tested without the store.
+export const bumpStreakState = (
+  state: GamificationState,
+  todayKeyStr: string = todayKey(),
+): GamificationState => {
+  if (state.lastActiveDay === todayKeyStr) return state;
+  if (state.lastActiveDay == null) {
+    return { ...state, streak: 1, lastActiveDay: todayKeyStr, jokerUsedToday: false };
+  }
+  const diff = daysBetween(state.lastActiveDay, todayKeyStr);
+
+  if (diff === 1) {
+    const nextStreak = state.streak + 1;
+    const earned = nextStreak % 7 === 0 && state.jokers < JOKER_CAP;
+    return {
+      ...state,
+      streak: nextStreak,
+      lastActiveDay: todayKeyStr,
+      jokers: earned ? state.jokers + 1 : state.jokers,
+      jokerUsedToday: false,
+    };
+  }
+
+  const missed = diff - 1;
+  if (missed <= state.jokers) {
+    return {
+      ...state,
+      streak: state.streak + 1,
+      lastActiveDay: todayKeyStr,
+      jokers: state.jokers - missed,
+      jokerUsedToday: true,
+    };
+  }
+
+  return {
+    ...state,
+    streak: 1,
+    lastActiveDay: todayKeyStr,
+    jokerUsedToday: false,
+  };
 };
 
 export const xpForLevel = (level: number): number => 100 + (level - 1) * 150;

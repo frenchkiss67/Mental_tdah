@@ -7,7 +7,6 @@ import {
   scheduleFocusEnd,
 } from './services/notifications';
 import {
-  JOKER_CAP,
   JOKER_INITIAL,
   type EnergyLevel,
   type GamificationState,
@@ -22,7 +21,7 @@ import {
   type Subtask,
   type Task,
 } from './types';
-import { daysBetween, decomposeTask, todayKey, uid } from './utils';
+import { bumpStreakState, daysBetween, decomposeTask, todayKey, uid } from './utils';
 
 type Store = {
   tasks: Task[];
@@ -136,45 +135,8 @@ const phaseMinutes = (p: PomodoroPhase, s: Settings): number => {
   return s.focusMinutes;
 };
 
-const bumpStreak = (state: GamificationState): GamificationState => {
-  const today = todayKey();
-  if (state.lastActiveDay === today) return state;
-  if (state.lastActiveDay == null) {
-    return { ...state, streak: 1, lastActiveDay: today, jokerUsedToday: false };
-  }
-  const diff = daysBetween(state.lastActiveDay, today);
-
-  if (diff === 1) {
-    const nextStreak = state.streak + 1;
-    // Joker earned every 7 days, capped.
-    const earned = nextStreak % 7 === 0 && state.jokers < JOKER_CAP;
-    return {
-      ...state,
-      streak: nextStreak,
-      lastActiveDay: today,
-      jokers: earned ? state.jokers + 1 : state.jokers,
-      jokerUsedToday: false,
-    };
-  }
-
-  const missed = diff - 1;
-  if (missed <= state.jokers) {
-    return {
-      ...state,
-      streak: state.streak + 1,
-      lastActiveDay: today,
-      jokers: state.jokers - missed,
-      jokerUsedToday: true,
-    };
-  }
-
-  return {
-    ...state,
-    streak: 1,
-    lastActiveDay: today,
-    jokerUsedToday: false,
-  };
-};
+const bumpStreak = (state: GamificationState): GamificationState =>
+  bumpStreakState(state, todayKey());
 
 export const useStore = create<Store>()(
   persist(

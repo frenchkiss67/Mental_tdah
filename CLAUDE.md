@@ -23,9 +23,10 @@ Pas d'EAS Build configuré : on développe via Expo Go (`npm start`). Pas d'iOS/
 npm install            # installer les deps
 npm start              # lancer Expo dev server
 npx tsc --noEmit       # typecheck (gate avant chaque commit)
+npm test               # tests Jest (logique pure uniquement)
 ```
 
-Il n'y a pas de suite de tests ni de lint configuré activement. Le seul garde-fou auto est `tsc`.
+Tests Jest dans `src/__tests__/` : ils couvrent uniquement la logique pure (`decomposeTask`, `bumpStreakState`, `pickWeightedRandomTask`, `levelFromXp`, etc.). Pas de tests de rendu RN. Pré-requis : `ts-jest` + `jest` (déjà dans devDeps). Pas de lint configuré activement.
 
 ## Structure
 
@@ -35,8 +36,9 @@ src/
   theme.ts                       Palettes lightColors/darkColors, ColorScheme, useColors() hook
   store.ts                       Zustand store unique persistant (TOUT l'état mutable est ici)
   types.ts                       Types partagés + constantes (JOKER_CAP, JOKER_INITIAL)
-  utils.ts                       uid, todayKey, daysBetween, formatTime, decomposeTask (heuristique),
-                                 levelFromXp, pickWeightedRandomTask
+  utils.ts                       uid, todayKey, daysBetween, formatTime, decomposeTask (heuristique
+                                 + verb templates), levelFromXp, pickWeightedRandomTask, bumpStreakState
+  __tests__/                     Tests Jest (utils, streak/jokers)
   usePomodoroEngine.ts           Tick global qui détecte les fins de phase (monté UNE fois dans App.tsx)
   useSoundscapeEngine.ts         Charge/décharge Audio.Sound piloté par le store (monté UNE fois)
   services/
@@ -147,7 +149,7 @@ Pas de prompt caching activé (le system prompt est trop court pour la cache min
 
 - Branche de dev : `claude/adhd-task-app-R4Z39`
 - Pas de PR ouverte ; on commit puis push.
-- Pas de hook pre-commit configuré ; lancer `npx tsc --noEmit` à la main avant chaque commit.
+- Pas de hook pre-commit configuré ; lancer `npx tsc --noEmit && npm test` à la main avant chaque commit.
 
 ### Done log
 
@@ -185,7 +187,7 @@ Les fichiers audio vivent dans `assets/audio/` ; voir `assets/audio/README.md` p
 - Sync cloud / comptes / multi-device
 - Paywall / RevenueCat / Stripe
 - Widget iOS / Share extension (demande un build EAS, pas Expo Go)
-- Tests unitaires ou e2e
+- Tests UI / e2e (les tests Jest existants ne couvrent que la logique pure)
 - CI
 - Estimation de temps par micro-étape — sur la roadmap courte
 - Audio CC0 réel dans `assets/audio/` (les placeholders ne jouent pas de son)
