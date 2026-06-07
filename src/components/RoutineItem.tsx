@@ -34,10 +34,15 @@ export const RoutineItem: React.FC<Props> = ({ routine }) => {
 
         <View style={styles.body}>
           <Text style={[styles.title, isToday && styles.titleDone]}>
-            {routine.emoji ? `${routine.emoji}  ` : ''}
+            {routine.kind === 'medication'
+              ? '💊  '
+              : routine.emoji
+                ? `${routine.emoji}  `
+                : ''}
             {routine.title}
           </Text>
           <View style={styles.metaRow}>
+            {routine.dose && <Text style={styles.dose}>{routine.dose} · </Text>}
             <Text style={styles.meta}>{dayLabel}</Text>
             {routine.scheduledTime && <Text style={styles.meta}> · {routine.scheduledTime}</Text>}
             {routine.streak > 1 && <Text style={styles.streak}> · {routine.streak}j</Text>}
@@ -89,6 +94,7 @@ const makeStyles = (c: ColorScheme) =>
     titleDone: { color: c.textMuted },
     metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
     meta: { ...type.small, color: c.textMuted },
+    dose: { ...type.small, color: c.primary, fontWeight: '700' },
     streak: { ...type.small, color: c.accent, fontWeight: '700' },
     delete: { fontSize: 22, color: c.textFaint, paddingHorizontal: spacing.sm },
   });

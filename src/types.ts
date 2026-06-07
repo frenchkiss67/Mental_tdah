@@ -44,6 +44,8 @@ export type GamificationState = {
 export const JOKER_CAP = 3;
 export const JOKER_INITIAL = 2;
 
+export type RoutineKind = 'habit' | 'medication';
+
 export type Routine = {
   id: string;
   title: string;
@@ -54,6 +56,8 @@ export type Routine = {
   lastCompletedDay: string | null;
   createdAt: number;
   notificationId?: string;
+  kind?: RoutineKind; // undefined = legacy 'habit'
+  dose?: string; // free-text for medication dose (e.g., "10mg")
 };
 
 export type SoundscapeId = 'brown' | 'rain' | 'forest' | 'fire';

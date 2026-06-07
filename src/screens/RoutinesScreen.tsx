@@ -21,6 +21,10 @@ export const RoutinesScreen: React.FC = () => {
     const aDone = a.lastCompletedDay === today ? 1 : 0;
     const bDone = b.lastCompletedDay === today ? 1 : 0;
     if (aDone !== bDone) return aDone - bDone;
+    // Medication ahead of habits for same done state — they're priority.
+    const aMed = a.kind === 'medication' ? 0 : 1;
+    const bMed = b.kind === 'medication' ? 0 : 1;
+    if (aMed !== bMed) return aMed - bMed;
     return a.createdAt - b.createdAt;
   });
 

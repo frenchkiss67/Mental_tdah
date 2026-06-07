@@ -33,8 +33,91 @@ const ACTION_VERBS = [
   'Ranger',
 ];
 
+type StepTemplate = { title: string; estimatedMinutes?: number };
+
+// Verb-based templates. Order matters: first regex match wins. Patterns
+// are matched against a lowercased blob (title + optional note). Keep them
+// specific enough to avoid false positives ("envoyer mail" should not
+// also fire "écrire").
+const VERB_TEMPLATES: { match: RegExp; steps: StepTemplate[] }[] = [
+  {
+    match: /\b(envoyer|repondre|répondre)\b.*\b(mail|email|courriel|message)\b/,
+    steps: [
+      { title: 'Ouvrir la messagerie', estimatedMinutes: 2 },
+      { title: 'Trouver le bon destinataire', estimatedMinutes: 2 },
+      { title: 'Écrire 2-3 phrases, même imparfaites', estimatedMinutes: 5 },
+      { title: 'Relire une fois', estimatedMinutes: 2 },
+      { title: 'Envoyer', estimatedMinutes: 1 },
+    ],
+  },
+  {
+    match: /\bappeler\b|\bcoup de fil\b|\btéléphoner\b/,
+    steps: [
+      { title: 'Trouver le numéro', estimatedMinutes: 2 },
+      { title: 'Noter 2-3 points à dire', estimatedMinutes: 3 },
+      { title: 'Appeler maintenant', estimatedMinutes: 5 },
+      { title: 'Noter ce qui en ressort', estimatedMinutes: 2 },
+    ],
+  },
+  {
+    match: /\bprendre\s+(un\s+)?rendez-vous\b|\brdv\b|\bréserver\b/,
+    steps: [
+      { title: 'Trouver le bon contact', estimatedMinutes: 5 },
+      { title: 'Ouvrir le calendrier', estimatedMinutes: 1 },
+      { title: 'Appeler ou écrire', estimatedMinutes: 5 },
+      { title: "Noter le rdv dans l'agenda", estimatedMinutes: 2 },
+    ],
+  },
+  {
+    match: /\b(papiers?|administrati(f|ve)|courrier|impôts|déclaration)\b/,
+    steps: [
+      { title: "Ouvrir l'enveloppe / le document", estimatedMinutes: 2 },
+      { title: 'Identifier ce qui est demandé', estimatedMinutes: 5 },
+      { title: 'Noter la date limite quelque part', estimatedMinutes: 1 },
+      { title: 'Préparer la réponse ou rassembler les pièces', estimatedMinutes: 15 },
+    ],
+  },
+  {
+    match: /\b(faire\s+les\s+|aller\s+faire\s+les\s+|faire\s+des\s+)?courses\b/,
+    steps: [
+      { title: 'Vérifier le frigo et les placards', estimatedMinutes: 5 },
+      { title: 'Lister 5-10 items', estimatedMinutes: 3 },
+      { title: 'Y aller', estimatedMinutes: 30 },
+      { title: 'Tout ranger en rentrant', estimatedMinutes: 5 },
+    ],
+  },
+  {
+    match: /\b(ranger|trier|nettoyer|faire\s+le\s+ménage)\b/,
+    steps: [
+      { title: 'Choisir UN endroit ou UNE pile', estimatedMinutes: 1 },
+      { title: 'Faire 5 minutes seulement', estimatedMinutes: 5 },
+      { title: 'Pause si besoin', estimatedMinutes: 2 },
+      { title: 'Continuer 5 autres minutes', estimatedMinutes: 5 },
+    ],
+  },
+  {
+    match: /\b(écrire|rédiger)\b/,
+    steps: [
+      { title: 'Ouvrir le document', estimatedMinutes: 1 },
+      { title: 'Écrire la 1ère phrase, même mauvaise', estimatedMinutes: 5 },
+      { title: 'Continuer 10 min sans relire', estimatedMinutes: 10 },
+      { title: 'Relire grossièrement', estimatedMinutes: 5 },
+    ],
+  },
+  {
+    match: /\b(lire|terminer\s+le\s+livre|finir\s+l'article)\b/,
+    steps: [
+      { title: "Ouvrir l'article ou le livre", estimatedMinutes: 1 },
+      { title: 'Lire 10 lignes seulement', estimatedMinutes: 5 },
+      { title: 'Noter UNE idée qui ressort', estimatedMinutes: 2 },
+    ],
+  },
+];
+
 // Heuristic decomposition: split a task title/note into 3-5 actionable steps.
-// No AI — uses simple cues (newlines, commas, "et", "puis") and a fallback template.
+// No AI — uses simple cues (newlines, commas, "et", "puis") first, then a
+// verb dictionary for common ADHD-relevant chores (mail, calls, errands,
+// admin paperwork), and finally a generic template.
 export const decomposeTask = (title: string, note?: string): Subtask[] => {
   const blob = [title, note].filter(Boolean).join('\n').trim();
   if (!blob) return [];
@@ -44,20 +127,33 @@ export const decomposeTask = (title: string, note?: string): Subtask[] => {
     .map((s) => s.trim())
     .filter((s) => s.length > 2);
 
-  let parts: string[];
   if (explicitParts.length >= 2) {
-    parts = explicitParts.slice(0, 5);
-  } else {
-    parts = [
-      `${ACTION_VERBS[0]} ce qu'il faut pour : ${title}`,
-      `${ACTION_VERBS[1]} les 3 premières micro-étapes`,
-      `Faire la 1ère étape pendant 5 min seulement`,
-      `Marquer une pause si bloqué`,
-      `Cocher dès qu'une mini-étape est faite`,
-    ];
+    return explicitParts.slice(0, 5).map((p) => ({
+      id: uid(),
+      title: p.charAt(0).toUpperCase() + p.slice(1),
+      done: false,
+    }));
   }
 
-  return parts.map((p) => ({
+  const haystack = blob.toLowerCase();
+  for (const tpl of VERB_TEMPLATES) {
+    if (tpl.match.test(haystack)) {
+      return tpl.steps.map((step) => ({
+        id: uid(),
+        title: step.title,
+        done: false,
+        estimatedMinutes: step.estimatedMinutes,
+      }));
+    }
+  }
+
+  return [
+    `${ACTION_VERBS[0]} ce qu'il faut pour : ${title}`,
+    `${ACTION_VERBS[1]} les 3 premières micro-étapes`,
+    'Faire la 1ère étape pendant 5 min seulement',
+    'Marquer une pause si bloqué',
+    'Cocher dès qu\'une mini-étape est faite',
+  ].map((p) => ({
     id: uid(),
     title: p.charAt(0).toUpperCase() + p.slice(1),
     done: false,

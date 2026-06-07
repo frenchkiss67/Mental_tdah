@@ -354,6 +354,8 @@ export const useStore = create<Store>()(
           lastCompletedDay: null,
           createdAt: Date.now(),
           notificationId: input.notificationId,
+          kind: input.kind ?? 'habit',
+          dose: input.dose,
         };
         set((s) => ({ routines: [...s.routines, routine] }));
         return id;

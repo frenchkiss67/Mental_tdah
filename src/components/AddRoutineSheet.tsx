@@ -36,6 +36,8 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
   const [emoji, setEmoji] = useState('');
   const [time, setTime] = useState<string | null>(null);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [isMedication, setIsMedication] = useState(false);
+  const [dose, setDose] = useState('');
 
   const toggleDay = (d: number) =>
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
@@ -57,12 +59,16 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
       scheduledTime: time ?? undefined,
       days,
       notificationId,
+      kind: isMedication ? 'medication' : 'habit',
+      dose: isMedication && dose.trim() ? dose.trim() : undefined,
     });
 
     setTitle('');
     setEmoji('');
     setTime(null);
     setDays([1, 2, 3, 4, 5]);
+    setIsMedication(false);
+    setDose('');
     onClose();
   };
 
@@ -79,15 +85,16 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
 
           <View style={styles.titleRow}>
             <TextInput
-              placeholder="🌟"
+              placeholder={isMedication ? '💊' : '🌟'}
               placeholderTextColor={c.textFaint}
               style={styles.emoji}
               value={emoji}
               onChangeText={(v) => setEmoji(v.slice(0, 2))}
               maxLength={4}
+              editable={!isMedication}
             />
             <TextInput
-              placeholder="Ex: Médication, sport, méditation"
+              placeholder={isMedication ? 'Ex: Méthylphénidate' : 'Ex: Sport, méditation, hygiène'}
               placeholderTextColor={c.textFaint}
               style={[styles.input, { flex: 1 }]}
               value={title}
@@ -95,6 +102,35 @@ export const AddRoutineSheet: React.FC<Props> = ({ visible, onClose }) => {
               autoFocus
             />
           </View>
+
+          <View style={styles.kindRow}>
+            <Pressable
+              onPress={() => setIsMedication(false)}
+              style={[styles.kindPill, !isMedication && styles.kindPillActive]}
+            >
+              <Text style={[styles.kindText, !isMedication && styles.kindTextActive]}>
+                Habitude
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setIsMedication(true)}
+              style={[styles.kindPill, isMedication && styles.kindPillActive]}
+            >
+              <Text style={[styles.kindText, isMedication && styles.kindTextActive]}>
+                💊 Médicament
+              </Text>
+            </Pressable>
+          </View>
+
+          {isMedication && (
+            <TextInput
+              placeholder="Dose (optionnel, ex: 10mg)"
+              placeholderTextColor={c.textFaint}
+              style={styles.input}
+              value={dose}
+              onChangeText={setDose}
+            />
+          )}
 
           <Text style={styles.label}>Jours</Text>
           <View style={styles.row}>
@@ -167,6 +203,17 @@ const makeStyles = (c: ColorScheme) =>
     heading: { ...type.h1, color: c.text },
     hint: { ...type.small, color: c.textMuted },
     titleRow: { flexDirection: 'row', gap: spacing.sm },
+    kindRow: { flexDirection: 'row', gap: spacing.sm },
+    kindPill: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+    },
+    kindPillActive: { backgroundColor: c.primary },
+    kindText: { ...type.small, color: c.textMuted, fontWeight: '700' },
+    kindTextActive: { color: '#fff' },
     emoji: {
       width: 60,
       backgroundColor: c.surface,
