@@ -105,6 +105,7 @@ const initialSettings: Settings = {
   dailyReminderMinute: 0,
   aiDecompositionEnabled: false,
   theme: 'system',
+  onboardingCompleted: false,
 };
 
 const initialMood: Mood = {

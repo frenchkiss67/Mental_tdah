@@ -98,4 +98,5 @@ export type Settings = {
   aiDecompositionEnabled: boolean;
   anthropicApiKey?: string;
   theme: ThemePref;
+  onboardingCompleted: boolean;
 };

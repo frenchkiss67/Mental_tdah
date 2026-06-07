@@ -6,6 +6,7 @@ import { StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FocusScreen } from './src/screens/FocusScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { RoutinesScreen } from './src/screens/RoutinesScreen';
 import { TasksScreen } from './src/screens/TasksScreen';
@@ -70,12 +71,22 @@ const AppCore: React.FC = () => {
   useSoundscapeEngine();
   const c = useColors();
   const themePref = useStore((s) => s.settings.theme);
+  const onboardingCompleted = useStore((s) => s.settings.onboardingCompleted);
   const system = useColorScheme();
   const isDark = themePref === 'dark' || (themePref === 'system' && system === 'dark');
 
   React.useEffect(() => {
     setupAndroidChannel();
   }, []);
+
+  if (!onboardingCompleted) {
+    return (
+      <>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <OnboardingScreen />
+      </>
+    );
+  }
 
   const navTheme = useMemo(
     () => ({
